@@ -20,16 +20,14 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
         with:
-          packages: 'platforms;android-34 build-tools;34.0.0'
+          packages: 'platforms;android-33 build-tools;33.0.2'
 
       - name: Create Android project
         run: |
           mkdir -p app/src/main/java/com/happyzh/english/songs
           mkdir -p app/src/main/res/values
-          mkdir -p app/src/main/res/drawable
           mkdir -p app/src/main/assets/audio
 
-          # Copy PWA files into assets
           cp index.html app/src/main/assets/
           cp manifest.json app/src/main/assets/
           cp sw.js app/src/main/assets/
@@ -37,14 +35,13 @@ jobs:
           cp icon-512.png app/src/main/assets/
           cp audio/*.m4a app/src/main/assets/audio/
 
-          # AndroidManifest.xml - no INTERNET permission needed
           cat > app/src/main/AndroidManifest.xml << 'XMLEOF'
           <?xml version="1.0" encoding="utf-8"?>
-          <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-              package="com.happyzh.english.songs">
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
               <application
                   android:allowBackup="true"
                   android:label="Food Songs"
+                  android:icon="@mipmap/ic_launcher"
                   android:theme="@style/Theme.App">
                   <activity
                       android:name=".MainActivity"
@@ -59,7 +56,6 @@ jobs:
           </manifest>
           XMLEOF
 
-          # MainActivity - load from local assets
           cat > app/src/main/java/com/happyzh/english/songs/MainActivity.java << 'JAVAEOF'
           package com.happyzh.english.songs;
           import android.app.Activity;
@@ -88,17 +84,18 @@ jobs:
           }
           JAVAEOF
 
-          # styles.xml
           cat > app/src/main/res/values/styles.xml << 'STYLEEOF'
           <?xml version="1.0" encoding="utf-8"?>
           <resources>
-              <style name="Theme.App" parent="android:Theme.Material.Light.NoActionBar">
-                  <item name="android:statusBarColor">#FF6B6B</item>
+              <style name="Theme.App" parent="android:Theme.Light.NoTitleBar.Fullscreen">
+                  <item name="android:windowBackground">#FFF8F0</item>
               </style>
           </resources>
           STYLEEOF
 
-          # build.gradle (project)
+          mkdir -p app/src/main/res/mipmap-hdpi
+          cp icon-192.png app/src/main/res/mipmap-hdpi/ic_launcher.png
+
           cat > build.gradle << 'GRADLEEOF'
           buildscript {
               repositories { google(); mavenCentral() }
@@ -107,60 +104,51 @@ jobs:
           allprojects { repositories { google(); mavenCentral() } }
           GRADLEEOF
 
-          # app/build.gradle
           cat > app/build.gradle << 'APPGRADLE'
           plugins { id 'com.android.application' }
           android {
               namespace 'com.happyzh.english.songs'
-              compileSdk 34
+              compileSdk 33
               defaultConfig {
                   applicationId "com.happyzh.english.songs"
-                  minSdk 21; targetSdk 34; versionCode 2; versionName "1.1"
-              }
-              signingConfigs {
-                  release {
-                      storeFile file("../release.keystore")
-                      storePassword "android123"
-                      keyAlias "englishsongs"
-                      keyPassword "android123"
-                  }
+                  minSdk 21; targetSdk 33; versionCode 2; versionName "1.1"
               }
               buildTypes {
-                  release {
-                      signingConfig signingConfigs.release
+                  debug {
                       minifyEnabled false
                   }
+              }
+              compileOptions {
+                  sourceCompatibility JavaVersion.VERSION_11
+                  targetCompatibility JavaVersion.VERSION_11
               }
           }
           APPGRADLE
 
-          # settings.gradle
           cat > settings.gradle << 'SETEOF'
           rootProject.name = "FoodSongs"
           include ':app'
           SETEOF
 
-          # gradle.properties
           cat > gradle.properties << 'PROPEOF'
           android.useAndroidX=false
           org.gradle.jvmargs=-Xmx2048m
           PROPEOF
 
-      - name: Generate keystore
-        run: |
-          keytool -genkey -v -keystore release.keystore -alias englishsongs \
-            -keyalg RSA -keysize 2048 -validity 10000 \
-            -storepass android123 -keypass android123 \
-            -dname "CN=English Songs, OU=Dev, O=Happyzh, L=Beijing, ST=Beijing, C=CN"
-
       - name: Build APK
         run: |
           export ANDROID_HOME=$ANDROID_SDK_ROOT
           gradle wrapper --gradle-version 8.5
-          ./gradlew :app:assembleRelease
+          ./gradlew :app:assembleDebug
+
+      - name: Verify APK
+        run: |
+          ls -lh app/build/outputs/apk/debug/*.apk
+          echo "APK size:"
+          du -sh app/build/outputs/apk/debug/*.apk
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: english-songs-apk
-          path: app/build/outputs/apk/release/*.apk
+          name: food-songs
+          path: app/build/outputs/apk/debug/app-debug.apk
