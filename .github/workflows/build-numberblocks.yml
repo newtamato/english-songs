@@ -25,6 +25,7 @@ jobs:
           PKG=com/happyzh/numberblocks
           mkdir -p app/src/main/java/$PKG
           mkdir -p app/src/main/res/values
+          mkdir -p app/src/main/assets
 
           # ---- AndroidManifest.xml ----
           cat > app/src/main/AndroidManifest.xml << 'EOF'
@@ -35,7 +36,8 @@ jobs:
                   android:allowBackup="true"
                   android:label="Numberblocks"
                   android:theme="@style/Theme.App"
-                  android:usesCleartextTraffic="true">
+                  android:usesCleartextTraffic="true"
+                  android:hardwareAccelerated="true">
                   <activity
                       android:name=".MainActivity"
                       android:exported="true"
@@ -46,12 +48,6 @@ jobs:
                           <category android:name="android.intent.category.LAUNCHER" />
                       </intent-filter>
                   </activity>
-                  <activity
-                      android:name=".PlayerActivity"
-                      android:exported="false"
-                      android:screenOrientation="sensorLandscape"
-                      android:configChanges="orientation|screenSize"
-                      android:theme="@style/Theme.Player" />
               </application>
           </manifest>
           EOF
@@ -60,208 +56,159 @@ jobs:
           cat > app/src/main/java/$PKG/MainActivity.java << 'JAVAEOF'
           package com.happyzh.numberblocks;
           import android.app.Activity;
-          import android.app.ProgressDialog;
-          import android.content.Intent;
-          import android.net.Uri;
-          import android.os.AsyncTask;
           import android.os.Bundle;
           import android.view.View;
-          import android.view.ViewGroup;
-          import android.widget.*;
-          import java.io.*;
-          import java.net.*;
-          import javax.net.ssl.*;
-          import org.json.*;
+          import android.webkit.*;
+          import android.widget.Toast;
           public class MainActivity extends Activity {
-              private static final String BVID = "BV1DiYYzkEWY";
-              private static final String[][] EPISODES = {
-                  {"第一季", "31732138151", "95分钟"},
-                  {"第二季", "31732141725", "237分钟"},
-                  {"第三季", "31732204146", "157分钟"},
-                  {"第四季", "31732271722", "240分钟"},
-                  {"第五季", "31732335213", "68分钟"},
-              };
+              private WebView wv;
 
               @Override
               protected void onCreate(Bundle savedInstanceState) {
                   super.onCreate(savedInstanceState);
-
-                  LinearLayout root = new LinearLayout(this);
-                  root.setOrientation(LinearLayout.VERTICAL);
-                  root.setBackgroundColor(0xFF1a1a2e);
-
-                  TextView title = new TextView(this);
-                  title.setText("Numberblocks 数字积木");
-                  title.setTextSize(24);
-                  title.setTextColor(0xFFFFFFFF);
-                  title.setPadding(32, 40, 32, 20);
-                  title.setBackgroundColor(0xFF16213e);
-                  root.addView(title);
-
-                  TextView sub = new TextView(this);
-                  sub.setText("1-5季 · 中文配音 · 数学英语启蒙");
-                  sub.setTextSize(13);
-                  sub.setTextColor(0xFF888899);
-                  sub.setPadding(32, 0, 32, 24);
-                  sub.setBackgroundColor(0xFF16213e);
-                  root.addView(sub);
-
-                  ScrollView scroll = new ScrollView(this);
-                  LinearLayout list = new LinearLayout(this);
-                  list.setOrientation(LinearLayout.VERTICAL);
-                  list.setPadding(16, 16, 16, 80);
-                  scroll.addView(list);
-                  root.addView(scroll, new LinearLayout.LayoutParams(
-                      ViewGroup.LayoutParams.MATCH_PARENT, 0, 1));
-
-                  int[] colors = {0xFFe94560, 0xFF0f3460, 0xFF533483, 0xFF16213e, 0xFF1a936f};
-                  for (int i = 0; i < EPISODES.length; i++) {
-                      final int idx = i;
-                      LinearLayout card = new LinearLayout(this);
-                      card.setOrientation(LinearLayout.VERTICAL);
-                      card.setPadding(24, 22, 24, 22);
-                      card.setBackgroundColor(colors[i]);
-                      int m = 18;
-                      LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
-                          ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-                      lp.setMargins(8, m, 8, 0);
-                      card.setLayoutParams(lp);
-                      card.setOnClickListener(v -> loadAndPlay(idx));
-
-                      TextView num = new TextView(this);
-                      num.setText("Season " + (i + 1));
-                      num.setTextSize(14);
-                      num.setTextColor(0xAAFFFFFF);
-                      card.addView(num);
-
-                      TextView name = new TextView(this);
-                      name.setText(EPISODES[i][0]);
-                      name.setTextSize(22);
-                      name.setTextColor(0xFFFFFFFF);
-                      name.setPadding(0, 4, 0, 4);
-                      card.addView(name);
-
-                      TextView dur = new TextView(this);
-                      dur.setText("▶ " + EPISODES[i][2]);
-                      dur.setTextSize(13);
-                      dur.setTextColor(0xAAFFFFFF);
-                      card.addView(dur);
-
-                      list.addView(card);
-                  }
-
-                  setContentView(root);
-              }
-
-              private void loadAndPlay(int index) {
-                  ProgressDialog pd = ProgressDialog.show(this, "", "获取播放地址...", true);
-                  new AsyncTask<Integer, Void, String>() {
-                      @Override
-                      protected String doInBackground(Integer... idx) {
-                          try {
-                              String cid = EPISODES[idx[0]][1];
-                              String api = "https://api.bilibili.com/x/player/playurl"
-                                  + "?bvid=" + BVID + "&cid=" + cid + "&qn=80&fnval=1&fourk=1";
-                              URL url = new URL(api);
-                              HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                              conn.setRequestProperty("User-Agent", "Mozilla/5.0");
-                              conn.setRequestProperty("Referer", "https://www.bilibili.com");
-                              conn.setConnectTimeout(8000);
-                              conn.setReadTimeout(8000);
-                              BufferedReader br = new BufferedReader(
-                                  new InputStreamReader(conn.getInputStream()));
-                              StringBuilder sb = new StringBuilder();
-                              String line;
-                              while ((line = br.readLine()) != null) sb.append(line);
-                              br.close();
-                              JSONObject json = new JSONObject(sb.toString());
-                              return json.getJSONObject("data").getJSONArray("durl")
-                                  .getJSONObject(0).getString("url");
-                          } catch (Exception e) { return null; }
-                      }
-                      @Override
-                      protected void onPostExecute(String url) {
-                          pd.dismiss();
-                          if (url != null) {
-                              Intent intent = new Intent(MainActivity.this, PlayerActivity.class);
-                              intent.setData(Uri.parse(url));
-                              startActivity(intent);
-                          } else {
-                              Toast.makeText(MainActivity.this,
-                                  "加载失败，检查网络连接", Toast.LENGTH_SHORT).show();
-                          }
-                      }
-                  }.execute(index);
-              }
-          }
-          JAVAEOF
-
-          # ---- PlayerActivity.java ----
-          cat > app/src/main/java/$PKG/PlayerActivity.java << 'JAVAEOF'
-          package com.happyzh.numberblocks;
-          import android.app.Activity;
-          import android.net.Uri;
-          import android.os.Bundle;
-          import android.view.View;
-          import android.view.WindowManager;
-          import android.widget.*;
-          public class PlayerActivity extends Activity {
-              private VideoView videoView;
-              private boolean isPlaying = true;
-
-              @Override
-              protected void onCreate(Bundle savedInstanceState) {
-                  super.onCreate(savedInstanceState);
-                  getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
                   getWindow().getDecorView().setSystemUiVisibility(
                       View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
                       | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
 
-                  FrameLayout root = new FrameLayout(this);
-                  root.setBackgroundColor(0xFF000000);
-
-                  videoView = new VideoView(this);
-                  root.addView(videoView, new FrameLayout.LayoutParams(
-                      FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
-
-                  Uri uri = getIntent().getData();
-                  if (uri != null) {
-                      videoView.setVideoURI(uri);
-                      videoView.setOnPreparedListener(mp -> { videoView.start(); });
-                      videoView.setOnCompletionListener(mp -> finish());
-                      videoView.setOnErrorListener((mp, w, e) -> {
-                          Toast.makeText(this, "播放失败", Toast.LENGTH_SHORT).show();
-                          finish(); return true;
-                      });
-                  }
-
-                  videoView.setOnClickListener(v -> {
-                      if (isPlaying) { videoView.pause(); }
-                      else { videoView.start(); }
-                      isPlaying = !isPlaying;
+                  wv = new WebView(this);
+                  WebSettings ws = wv.getSettings();
+                  ws.setJavaScriptEnabled(true);
+                  ws.setDomStorageEnabled(true);
+                  ws.setAllowFileAccess(true);
+                  ws.setAllowFileAccessFromFileURLs(true);
+                  ws.setAllowUniversalAccessFromFileURLs(true);
+                  ws.setMediaPlaybackRequiresUserGesture(false);
+                  ws.setUseWideViewPort(true);
+                  ws.setLoadWithOverviewMode(true);
+                  wv.setWebViewClient(new WebViewClient());
+                  wv.setWebChromeClient(new WebChromeClient() {
+                      @Override
+                      public void onShowCustomView(View view, CustomViewCallback cb) {
+                          setContentView(view);
+                      }
                   });
-
-                  setContentView(root);
+                  wv.loadUrl("file:///android_asset/index.html");
+                  setContentView(wv);
               }
 
               @Override
-              protected void onPause() {
-                  super.onPause();
-                  if (videoView != null && videoView.isPlaying()) {
-                      videoView.pause(); isPlaying = false;
+              public void onBackPressed() {
+                  if (wv.canGoBack() && wv.getUrl() != null
+                      && !wv.getUrl().contains("player.bilibili.com")) {
+                      wv.goBack();
+                  } else {
+                      super.onBackPressed();
                   }
               }
           }
           JAVAEOF
+
+          # ---- index.html (main UI + player) ----
+          cat > app/src/main/assets/index.html << 'HTMLEOF'
+          <!DOCTYPE html>
+          <html lang="zh">
+          <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+          <style>
+          *{margin:0;padding:0;box-sizing:border-box}
+          body{background:#0a0a1a;font-family:-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;overflow-x:hidden;user-select:none;-webkit-tap-highlight-color:transparent}
+          .header{text-align:center;padding:40px 20px 30px;background:linear-gradient(135deg,#1a1a3e,#0d0d2b)}
+          .header h1{font-size:36px;font-weight:900;color:#fff;letter-spacing:2px}
+          .header h1 span{background:linear-gradient(135deg,#ff6b6b,#ffd93d,#6bcb77,#4d96ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+          .header p{color:#8888aa;margin-top:8px;font-size:14px}
+          .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:20px;padding:20px;max-width:1200px;margin:0 auto}
+          .card{border-radius:24px;padding:28px 24px;cursor:pointer;transition:transform .15s,box-shadow .15s;position:relative;overflow:hidden;min-height:180px;display:flex;flex-direction:column;justify-content:flex-end}
+          .card:active{transform:scale(.96)}
+          .card .num{position:absolute;top:16px;right:20px;font-size:72px;font-weight:900;opacity:.15;color:#fff}
+          .card .season{font-size:13px;color:rgba(255,255,255,.7);text-transform:uppercase;letter-spacing:3px;margin-bottom:6px}
+          .card .title{font-size:24px;font-weight:800;color:#fff;margin-bottom:4px}
+          .card .dur{font-size:13px;color:rgba(255,255,255,.6);margin-bottom:8px}
+          .card .play-btn{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.2);padding:8px 18px;border-radius:20px;font-size:14px;color:#fff;backdrop-filter:blur(4px);width:fit-content}
+          .card:nth-child(1){background:linear-gradient(135deg,#e94560,#c23152)}
+          .card:nth-child(2){background:linear-gradient(135deg,#0f3460,#16213e)}
+          .card:nth-child(3){background:linear-gradient(135deg,#533483,#3b1f6e)}
+          .card:nth-child(4){background:linear-gradient(135deg,#1a936f,#114b3e)}
+          .card:nth-child(5){background:linear-gradient(135deg,#e76f51,#c14c2c)}
+          .player-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:#000;z-index:9999}
+          .player-overlay iframe{width:100%;height:100%;border:none}
+          .close-btn{position:absolute;top:16px;right:16px;width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.15);border:none;color:#fff;font-size:22px;cursor:pointer;z-index:10;display:flex;align-items:center;justify-content:center}
+          .loading{display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);color:#fff;font-size:18px;z-index:9998;background:rgba(0,0,0,.7);padding:16px 32px;border-radius:12px}
+          @media(max-width:600px){.grid{grid-template-columns:1fr}.card{min-height:140px}.card .title{font-size:20px}}
+          </style>
+          </head>
+          <body>
+
+          <div class="header">
+            <h1><span>Numberblocks</span></h1>
+            <p>数字积木 · 1-5季 · 中文配音</p>
+          </div>
+
+          <div class="grid" id="grid"></div>
+          <div class="loading" id="loading">加载中...</div>
+          <div class="player-overlay" id="player">
+            <button class="close-btn" onclick="closePlayer()">✕</button>
+            <div id="playerContainer" style="width:100%;height:100%"></div>
+          </div>
+
+          <script>
+          const BVID = 'BV1DiYYzkEWY';
+          const EPISODES = [
+            {season:'Season 1',title:'第一季',dur:'95分钟',page:1,cid:'31732138151'},
+            {season:'Season 2',title:'第二季',dur:'237分钟',page:2,cid:'31732141725'},
+            {season:'Season 3',title:'第三季',dur:'157分钟',page:3,cid:'31732204146'},
+            {season:'Season 4',title:'第四季',dur:'240分钟',page:4,cid:'31732271722'},
+            {season:'Season 5',title:'第五季',dur:'68分钟',page:5,cid:'31732335213'}
+          ];
+
+          function buildCards() {
+            var g = document.getElementById('grid');
+            EPISODES.forEach(function(ep, i) {
+              var card = document.createElement('div');
+              card.className = 'card';
+              card.onclick = function(){ playEpisode(i); };
+              card.innerHTML =
+                '<div class="num">'+(i+1)+'</div>'+
+                '<div class="season">'+ep.season+'</div>'+
+                '<div class="title">'+ep.title+'</div>'+
+                '<div class="dur">▶ '+ep.dur+'</div>'+
+                '<div class="play-btn">▶ 播放</div>';
+              g.appendChild(card);
+            });
+          }
+
+          function playEpisode(index) {
+            var ep = EPISODES[index];
+            var loading = document.getElementById('loading');
+            var player = document.getElementById('player');
+            loading.style.display = 'block';
+            player.style.display = 'block';
+
+            var container = document.getElementById('playerContainer');
+            container.innerHTML = '<iframe src="https://player.bilibili.com/player.html'+
+              '?bvid='+BVID+'&page='+ep.page+
+              '&autoplay=1&high_quality=1&danmaku=0'+
+              '" allow="autoplay;fullscreen" allowfullscreen></iframe>';
+
+            setTimeout(function(){ loading.style.display = 'none'; }, 2500);
+          }
+
+          function closePlayer() {
+            document.getElementById('player').style.display = 'none';
+            document.getElementById('playerContainer').innerHTML = '';
+          }
+
+          buildCards();
+          </script>
+          </body>
+          </html>
+          HTMLEOF
 
           # ---- Styles ----
           cat > app/src/main/res/values/styles.xml << 'EOF'
           <?xml version="1.0" encoding="utf-8"?>
           <resources>
-              <style name="Theme.App" parent="android:Theme.Light.NoTitleBar">
-                  <item name="android:windowBackground">#1a1a2e</item>
-              </style>
-              <style name="Theme.Player" parent="android:Theme.Black.NoTitleBar.Fullscreen" />
+              <style name="Theme.App" parent="android:Theme.Black.NoTitleBar.Fullscreen" />
           </resources>
           EOF
 
@@ -281,7 +228,7 @@ jobs:
               compileSdk 33
               defaultConfig {
                   applicationId "com.happyzh.numberblocks"
-                  minSdk 21; targetSdk 33; versionCode 2; versionName "1.1"
+                  minSdk 21; targetSdk 33; versionCode 3; versionName "2.0"
               }
               buildTypes { debug { minifyEnabled false } }
           }
