@@ -19,54 +19,137 @@ jobs:
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          packages: 'platforms;android-34 build-tools;34.0.0'
 
-      - name: Install Bubblewrap
-        run: npm install -g @bubblewrap/cli
-
-      - name: Init TWA project
+      - name: Create Android project
         run: |
-          bubblewrap init --manifest="https://raw.githubusercontent.com/newtamato/english-songs/main/manifest.json" --directory twa
+          # Create project structure
+          mkdir -p app/src/main/java/com/happyzh/english/songs
+          mkdir -p app/src/main/res/values
+          mkdir -p app/src/main/res/drawable
 
-      - name: Generate signing key
+          # AndroidManifest.xml
+          cat > app/src/main/AndroidManifest.xml << 'XMLEOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+              package="com.happyzh.english.songs">
+              <uses-permission android:name="android.permission.INTERNET" />
+              <application
+                  android:allowBackup="true"
+                  android:label="Food Songs"
+                  android:theme="@style/Theme.App"
+                  android:usesCleartextTraffic="true">
+                  <activity
+                      android:name=".MainActivity"
+                      android:exported="true"
+                      android:configChanges="orientation|screenSize">
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN" />
+                          <category android:name="android.intent.category.LAUNCHER" />
+                      </intent-filter>
+                  </activity>
+              </application>
+          </manifest>
+          XMLEOF
+
+          # MainActivity.java
+          cat > app/src/main/java/com/happyzh/english/songs/MainActivity.java << 'JAVAEOF'
+          package com.happyzh.english.songs;
+          import android.app.Activity;
+          import android.os.Bundle;
+          import android.webkit.WebView;
+          import android.webkit.WebViewClient;
+          import android.webkit.WebSettings;
+          public class MainActivity extends Activity {
+              @Override
+              protected void onCreate(Bundle savedInstanceState) {
+                  super.onCreate(savedInstanceState);
+                  WebView wv = new WebView(this);
+                  WebSettings ws = wv.getSettings();
+                  ws.setJavaScriptEnabled(true);
+                  ws.setDomStorageEnabled(true);
+                  ws.setAllowFileAccess(true);
+                  wv.setWebViewClient(new WebViewClient());
+                  wv.loadUrl("https://happyzh.cn/english-songs/");
+                  setContentView(wv);
+              }
+          }
+          JAVAEOF
+
+          # styles.xml
+          cat > app/src/main/res/values/styles.xml << 'STYLEEOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <resources>
+              <style name="Theme.App" parent="android:Theme.Material.Light.NoActionBar">
+                  <item name="android:statusBarColor">#FF6B6B</item>
+              </style>
+          </resources>
+          STYLEEOF
+
+          # build.gradle (project)
+          cat > build.gradle << 'GRADLEEOF'
+          buildscript {
+              repositories { google(); mavenCentral() }
+              dependencies { classpath 'com.android.tools.build:gradle:8.2.0' }
+          }
+          allprojects { repositories { google(); mavenCentral() } }
+          GRADLEEOF
+
+          # app/build.gradle
+          cat > app/build.gradle << 'APPGRADLE'
+          plugins { id 'com.android.application' }
+          android {
+              namespace 'com.happyzh.english.songs'
+              compileSdk 34
+              defaultConfig {
+                  applicationId "com.happyzh.english.songs"
+                  minSdk 21; targetSdk 34; versionCode 1; versionName "1.0"
+              }
+              signingConfigs {
+                  release {
+                      storeFile file("../release.keystore")
+                      storePassword "android123"
+                      keyAlias "englishsongs"
+                      keyPassword "android123"
+                  }
+              }
+              buildTypes {
+                  release {
+                      signingConfig signingConfigs.release
+                      minifyEnabled false
+                  }
+              }
+          }
+          APPGRADLE
+
+          # settings.gradle
+          cat > settings.gradle << 'SETEOF'
+          rootProject.name = "FoodSongs"
+          include ':app'
+          SETEOF
+
+          # gradle.properties
+          cat > gradle.properties << 'PROPEOF'
+          android.useAndroidX=false
+          org.gradle.jvmargs=-Xmx2048m
+          PROPEOF
+
+      - name: Generate keystore
         run: |
-          keytool -genkey -v -keystore twa/release.keystore -alias englishsongs \
+          keytool -genkey -v -keystore release.keystore -alias englishsongs \
             -keyalg RSA -keysize 2048 -validity 10000 \
             -storepass android123 -keypass android123 \
             -dname "CN=English Songs, OU=Dev, O=Happyzh, L=Beijing, ST=Beijing, C=CN"
 
-      - name: Update signing config
-        run: |
-          cd twa
-          cat > twa-manifest.json << 'ENDMANIFEST'
-          {
-            "packageId": "com.happyzh.english.songs",
-            "host": "newtamato.github.io",
-            "name": "English Songs",
-            "launcherName": "Food Songs",
-            "display": "standalone",
-            "themeColor": "#FF6B6B",
-            "backgroundColor": "#FFF8F0",
-            "startUrl": "/english-songs/",
-            "iconUrl": "https://raw.githubusercontent.com/newtamato/english-songs/main/icon-512.png",
-            "maskableIconUrl": "https://raw.githubusercontent.com/newtamato/english-songs/main/icon-512.png",
-            "splashScreenFadeOutDuration": 300,
-            "signingKey": {
-              "path": "./release.keystore",
-              "alias": "englishsongs"
-            },
-            "appVersionName": "1.0",
-            "appVersionCode": 1
-          }
-          ENDMANIFEST
-
       - name: Build APK
         run: |
-          cd twa
-          PASS=android123
-          bubblewrap build --storePassword="${PASS}" --keyPassword="${PASS}"
+          export ANDROID_HOME=$ANDROID_SDK_ROOT
+          gradle wrapper --gradle-version 8.5
+          ./gradlew :app:assembleRelease
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: english-songs-apk
-          path: twa/*.apk
+          path: app/build/outputs/apk/release/*.apk
