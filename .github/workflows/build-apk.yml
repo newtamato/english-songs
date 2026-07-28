@@ -30,17 +30,38 @@ jobs:
             -storepass android -keypass android \
             -dname "CN=English Songs, OU=Dev, O=Happyzh, L=Beijing, ST=Beijing, C=CN"
 
-      - name: Init TWA project
+      - name: Init TWA
         run: |
-          bubblewrap init --manifest https://happyzh.cn/english-songs/manifest.json --directory twa
+          mkdir -p twa
+          cat > twa/twa-manifest.json << 'EOF'
+          {
+            "packageId": "com.happyzh.english.songs",
+            "host": "newtamato.github.io",
+            "name": "English Songs for Kids",
+            "launcherName": "Food Songs",
+            "display": "standalone",
+            "themeColor": "#FF6B6B",
+            "backgroundColor": "#FFF8F0",
+            "startUrl": "/english-songs/",
+            "iconUrl": "https://raw.githubusercontent.com/newtamato/english-songs/main/icon-512.png",
+            "maskableIconUrl": "https://raw.githubusercontent.com/newtamato/english-songs/main/icon-512.png",
+            "splashScreenFadeOutDuration": 300,
+            "signingKey": {
+              "path": "../release.keystore",
+              "alias": "englishsongs"
+            },
+            "appVersionName": "1.0",
+            "appVersionCode": 1
+          }
+          EOF
 
       - name: Build APK
         run: |
           cd twa
-          bubblewrap build
-
+          PASS=$(echo YW5kcm9pZA== | base64 -d)
+          bubblewrap build --storePassword="$PASS" --keyPassword="$PASS"
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: english-songs-apk
-          path: twa/app-release-signed.apk
+          path: twa/*.apk
