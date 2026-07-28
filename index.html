@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#FF6B6B">
+<title>🍎 食物英语儿歌</title>
+<link rel="manifest" href="manifest.json">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #FFF8F0;
+  --card: #FFFFFF;
+  --primary: #FF6B6B;
+  --primary-dark: #E55A5A;
+  --accent: #4ECDC4;
+  --accent2: #FFE66D;
+  --text: #2D3436;
+  --text-light: #636E72;
+  --en-color: #2D3436;
+  --zh-color: #B2BEC3;
+  --shadow: 0 4px 20px rgba(0,0,0,0.08);
+  --radius: 24px;
+  --safe-bottom: env(safe-area-inset-bottom, 16px);
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow-x: hidden;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+}
+
+/* ===== HEADER ===== */
+.header {
+  padding: 20px 20px 12px;
+  text-align: center;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: linear-gradient(180deg, var(--bg) 60%, transparent);
+}
+.header .title {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.header .title .emoji { font-size: 36px; }
+.header .subtitle {
+  font-size: 13px;
+  color: var(--text-light);
+  margin-top: 2px;
+}
+
+/* ===== PLAYER CARD ===== */
+.player-section {
+  padding: 0 16px;
+  max-width: 500px;
+  margin: 0 auto;
+}
+.player-card {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 24px 20px 20px;
+  box-shadow: var(--shadow);
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.player-card::before {
+  content: '';
+  position: absolute;
+  top: -40px;
+  right: -40px;
+  width: 120px;
+  height: 120px;
+  background: var(--accent2);
+  border-radius: 50%;
+  opacity: 0.3;
+}
+.player-card .song-emoji {
+  font-size: 64px;
+  margin-bottom: 8px;
+  animation: float 3s ease-in-out infinite;
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+.player-card .song-name {
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 4px;
+  position: relative;
+  z-index: 1;
+}
+.player-card .song-singer {
+  font-size: 14px;
+  color: var(--text-light);
+  margin-bottom: 16px;
+  position: relative;
+  z-index: 1;
+}
+
+/* Big Play Button */
+.play-btn-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-bottom: 12px;
+  position: relative;
+  z-index: 1;
+}
+.play-btn {
+  width: 72px; height: 72px;
+  border-radius: 50%;
+  border: none;
+  background: var(--primary);
+  color: white;
+  font-size: 32px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6px 24px rgba(255,107,107,0.4);
+  transition: transform 0.15s, box-shadow 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.play-btn:active { transform: scale(0.92); box-shadow: 0 3px 12px rgba(255,107,107,0.3); }
+.play-btn.playing { background: var(--accent); box-shadow: 0 6px 24px rgba(78,205,196,0.4); }
+
+.nav-btn {
+  width: 48px; height: 48px;
+  border-radius: 50%;
+  border: 2px solid #E0E0E0;
+  background: white;
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text);
+  transition: all 0.15s;
+}
+.nav-btn:active { background: #f5f5f5; border-color: #ccc; }
+
+/* Progress */
+.progress-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+.progress-bar {
+  flex: 1; height: 6px;
+  background: #F0F0F0;
+  border-radius: 3px;
+  overflow: hidden;
+  cursor: pointer;
+}
+.progress-fill {
+  height: 100%;
+  background: var(--primary);
+  border-radius: 3px;
+  transition: width 0.3s linear;
+  width: 0%;
+}
+.progress-time {
+  font-size: 12px;
+  color: var(--text-light);
+  min-width: 36px;
+  text-align: center;
+}
+
+/* ===== LYRICS SECTION ===== */
+.lyrics-section {
+  padding: 0 16px 16px;
+  max-width: 500px;
+  margin: 16px auto 0;
+}
+.lyrics-card {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 20px;
+  box-shadow: var(--shadow);
+  max-height: 320px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.lyrics-card .section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-light);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.lyric-line {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 0;
+  border-bottom: 1px solid #F5F5F5;
+}
+.lyric-line:last-child { border-bottom: none; }
+.lyric-line .en {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--en-color);
+  line-height: 1.5;
+}
+.lyric-line .zh {
+  font-size: 14px;
+  color: var(--zh-color);
+  line-height: 1.5;
+  margin-top: 2px;
+}
+
+/* ===== SONG LIST ===== */
+.songlist-section {
+  padding: 0 16px calc(20px + var(--safe-bottom));
+  max-width: 500px;
+  margin: 16px auto 0;
+}
+.songlist-card {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 12px;
+  box-shadow: var(--shadow);
+}
+.songlist-card .section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-light);
+  margin-bottom: 8px;
+  padding: 0 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.song-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 10px;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: background 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.song-item:active { background: #FFF5F5; }
+.song-item.active { background: #FFF0F0; }
+.song-item .item-num {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  background: #F5F5F5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-light);
+  flex-shrink: 0;
+}
+.song-item.active .item-num { background: var(--primary); color: white; }
+.song-item .item-info { flex: 1; min-width: 0; }
+.song-item .item-name { font-size: 16px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.song-item .item-singer { font-size: 12px; color: var(--text-light); }
+.song-item .item-playing {
+  width: 24px; height: 24px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary);
+  font-size: 16px;
+}
+.song-item.active.playing .item-playing { display: flex; }
+
+/* ===== INSTALL BANNER ===== */
+.install-banner {
+  display: none;
+  background: var(--primary);
+  color: white;
+  padding: 12px 20px;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  position: fixed;
+  bottom: 0;
+  left: 0; right: 0;
+  z-index: 100;
+  padding-bottom: calc(12px + var(--safe-bottom));
+}
+.install-banner.show { display: block; }
+
+/* Scrollbar */
+.lyrics-card::-webkit-scrollbar { width: 4px; }
+.lyrics-card::-webkit-scrollbar-thumb { background: #E0E0E0; border-radius: 2px; }
+
+/* Autoplay toggle */
+.autoplay-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--text-light);
+  cursor: pointer;
+}
+.autoplay-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: #E0E0E0;
+  transition: background 0.2s;
+}
+.autoplay-dot.on { background: var(--accent); }
+
+/* Loading */
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  font-size: 18px;
+  color: var(--text-light);
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="title"><span class="emoji">🍎</span>食物英语儿歌<span class="emoji">🍌</span></div>
+  <div class="subtitle">11 首 SSS 食物主题 · 中英对照</div>
+</div>
+
+<div id="app"><div class="loading">🎵 加载中...</div></div>
+
+<div class="install-banner" id="installBanner" onclick="installApp()">
+  📲 点击安装到桌面，离线也能听
+</div>
+
+<audio id="audio" preload="none"></audio>
+
+<script>
+// ===== SONG DATA =====
+const SONGS = [
+  {
+    name: "Apples & Bananas", singer: "Super Simple Songs", file: "audio/01_Apples_and_Bananas.m4a",
+    emoji: "🍎🍌",
+    lyrics: [
+      ["I like to eat eat eat apples and bananas","我喜欢吃苹果和香蕉"],
+      ["I like to eat eat eat apples and bananas","我喜欢吃苹果和香蕉"],
+      ["I like to eat eat eat apples and bananas","我喜欢吃苹果和香蕉"],
+      ["I like to eat eat eat apples and bananas","我喜欢吃苹果和香蕉"],
+      ["Now let's make a long a sound ay-ples and ba-nay-nays","现在让我们拖长音说苹果和香蕉"],
+      ["I like to ate ate ate ay-ples and ba-nay-nays","我喜欢吃苹果和香蕉"],
+      ["I like to ate ate ate ay-ples and ba-nay-nays","我喜欢吃苹果和香蕉"],
+      ["Let's try a long e sound ee-ples and ba-nee-nees","让我们拖长音说苹果和香蕉"],
+      ["I like to eat eat eat ee-ples and ba-nee-nees","我喜欢吃苹果和香蕉"],
+      ["I like to eat eat eat ee-ples and ba-nee-nees","我喜欢吃苹果和香蕉"],
+      ["How about a long I sound i-ples and ba-nigh-nighs","我拖长音说苹果和香蕉怎么样"],
+      ["I like to ite ite ite i-ples and ba-nigh-nighs","我喜欢吃苹果和香蕉"],
+      ["I like to ite ite ite i-ples and ba-nigh-nighs","我喜欢吃苹果和香蕉"],
+      ["Great let's sing it with a long o sound oh-ples and ba-no-nos","很棒 让我们一起拖长音唱苹果和香蕉"],
+      ["I like to ote ote ote oh-ples and ba-no-nos","我喜欢吃苹果和香蕉"],
+      ["I like to ote ote ote oh-ples and ba-no-nos","我喜欢吃苹果和香蕉"],
+      ["I know let's make an oo sound oo-ples and ba-noo-noos","我知道 让我们发苹果和香蕉的音"],
+      ["I like to oot oot oot oopples and ba-noo-noos","我喜欢苹果和香蕉"],
+      ["I like to oot oot oot oopples and ba-noo-noos","我喜欢苹果和香蕉"],
+      ["Apples and bananas one more time","苹果和香蕉 再来一次"],
+      ["I like to eat eat eat apples and bananas","我喜欢吃苹果和香蕉"],
+      ["I like to eat eat eat apples and bananas","我喜欢吃苹果和香蕉"],
+      ["I like to eat eat eat apples and bananas","我喜欢吃苹果和香蕉"],
+      ["I like to eat eat eat apples and bananas","我喜欢吃苹果和香蕉"]
+    ]
+  },
+  {
+    name: "Apple Tree", singer: "小囧熊", file: "audio/02_Apple_Tree.m4a",
+    emoji: "🌳🍎",
+    lyrics: [
+      ["Apple round apple red","圆苹果 红苹果"],["Apple juicy apple sweet","苹果汁 甜苹果"],
+      ["Apple apple I love you","苹果 苹果 我爱你"],["Apple sweet I love to eat","甜苹果 我喜欢吃"],
+      ["Apple round apple red","圆苹果 红苹果"],["Apple juicy apple sweet","苹果汁 甜苹果"],
+      ["Apple apple I love you","苹果 苹果 我爱你"],["Apple sweet I love to eat","甜苹果 我喜欢吃"],
+      ["Apple round apple red","圆苹果 红苹果"],["Apple juicy apple sweet","苹果汁 甜苹果"],
+      ["Apple apple I love you","苹果 苹果 我爱你"],["Apple sweet I love to eat","甜苹果 我喜欢吃"],
+      ["Apple round apple red","圆苹果 红苹果"],["Apple juicy apple sweet","苹果汁 甜苹果"],
+      ["Apple apple I love you","苹果 苹果 我爱你"],["Apple sweet I love to eat","甜苹果 我喜欢吃"]
+    ]
+  },
+  {
+    name: "水果食物名称", singer: "儿歌", file: "audio/03_水果食物名称.m4a",
+    emoji: "🍑🍇",
+    lyrics: [
+      ["桃子桃子 peach peach peach peach",""],["苹果苹果 apple apple apple apple",""],
+      ["梨子梨子 pear pear pear pear",""],["桔子桔子 orange orange orange",""],
+      ["香蕉香蕉 banana banana banana",""],["葡萄葡萄 grape grape grape",""],
+      ["米饭米饭 rice rice rice",""],["面条面条 noodle noodle noodle",""],
+      ["蛋糕蛋糕cake cake cake",""],["猪肉猪肉pork pork pork",""],
+      ["鱼肉鱼肉fish fish fish",""],["鸡蛋鸡蛋egg egg egg",""],
+      ["大豆大豆beans beans beans",""]
+    ]
+  },
+  {
+    name: "Do You Like Broccoli Ice Cream?", singer: "Super Simple Songs", file: "audio/04_Do_You_Like_Broccoli_Ice_Cream.m4a",
+    emoji: "🥦🍦",
+    lyrics: [
+      ["Do you like broccoli","你喜欢吃西蓝花吗"],["Yes I do yes I do","是的我喜欢"],
+      ["Do you like ice cream","你喜欢吃冰淇淋吗"],["Yes I do yes I do","是的我喜欢"],
+      ["Do you like broccoli ice cream","那你喜欢吃西蓝花味的冰淇淋吗"],["No I don't yucky","不 我不喜欢 太难吃了"],
+      ["Do you like donuts","你喜欢吃甜甜圈吗"],["Yes I do yes I do","是的我喜欢"],
+      ["Do you like juice","你喜欢喝果汁吗"],["Yes I do yes I do","是的我喜欢"],
+      ["Do you like donut juice","你喜欢甜甜圈果汁吗"],["No I don't yucky","不 我不喜欢 太难吃了"],
+      ["Do you like popcorn","你喜欢爆米花吗"],["Yes I do yes I do","是的我喜欢"],
+      ["Do you like pizza","你喜欢披萨吗"],["Yes I do yes I do","是的我喜欢"],
+      ["Do you like popcorn pizza","你喜欢爆米花披萨吗"],["No I don't yucky","不 我不喜欢 太难吃了"],
+      ["Do you like bananas","你喜欢香蕉吗"],["Yes I do yes I do","是的我喜欢"],
+      ["Do you like soup","你喜欢喝汤吗"],["Yes I do yes I do","是的我喜欢"],
+      ["Do you like banana soup","你喜欢香蕉汤吗"],["No I don't yucky","不 我不喜欢 太难吃了"]
+    ]
+  },
+  {
+    name: "Do You Like Spaghetti Yogurt?", singer: "Super Simple Songs", file: "audio/05_Do_You_Like_Spaghetti_Yogurt.m4a",
+    emoji: "🍝🥛",
+    lyrics: [
+      ["Do you like spaghetti","你喜欢吃意大利面吗"],["Yes I do","是的我喜欢"],
+      ["Do you like yogurt","你喜欢酸奶吗"],["Yes I do","是的我喜欢"],
+      ["Do you like spaghetti yogurt","你喜欢意大利面酸奶吗"],["No I don't yucky","不 我不喜欢 太难吃了"]
+    ]
+  },
+  {
+    name: "Are You Hungry?", singer: "Super Simple Songs", file: "audio/06_Are_You_Hungry.m4a",
+    emoji: "🤤🍌",
+    lyrics: [
+      ["Are you hungry","你饿了吗"],["Yes I am","是的我饿了"],
+      ["Are you hungry","你饿了吗"],["Yes I am","是的我饿了"],
+      ["Mmm a banana","嗯 一根香蕉"],["Yum yum yum yum yum yum yum yum yum","好吃好吃好吃"],
+      ["Are you hungry","你饿了吗"],["Yes I am","是的我饿了"],
+      ["Are you hungry","你饿了吗"],["Yes I am","是的我饿了"],
+      ["Mmm an apple","嗯 一个苹果"],["Yum yum yum yum yum yum yum yum yum","好吃好吃好吃"],
+      ["Are you hungry","你饿了吗"],["Yes I am","是的我饿了"],
+      ["Are you hungry","你饿了吗"],["Yes I am","是的我饿了"],
+      ["Mmm some grapes","嗯 一些葡萄"],["Yum yum yum yum yum yum yum yum yum","好吃好吃好吃"],
+      ["I'm full","我吃饱了"]
+    ]
+  },
+  {
+    name: "Hot Cross Buns", singer: "Super Simple Songs", file: "audio/07_Hot_Cross_Buns.m4a",
+    emoji: "🍞🔥",
+    lyrics: [
+      ["Hot cross buns","热十字面包"],["Hot cross buns","热十字面包"],
+      ["One a penny two a penny","一便士 两便士"],["Hot cross buns","热十字面包"],
+      ["Give them to your daughters","给你的女儿们"],["Give them to your sons","给你的儿子们"],
+      ["One a penny two a penny","一便士 两便士"],["Hot cross buns","热十字面包"]
+    ]
+  },
+  {
+    name: "Pat-A-Cake", singer: "Super Simple Songs", file: "audio/08_Pat-A-Cake.m4a",
+    emoji: "🎂👶",
+    lyrics: [
+      ["Pat-a-cake pat-a-cake baker's man","做蛋糕做蛋糕 面包师"],
+      ["Bake me a cake as fast as you can","快快为我烤个蛋糕"],
+      ["Pat it and roll it and mark it with B","拍拍它 滚滚它 标上个B"],
+      ["Put it in the oven for baby and me","放到炉子里 给宝宝和我"]
+    ]
+  },
+  {
+    name: "The Muffin Man", singer: "David Scott", file: "audio/09_The_Muffin_Man.m4a",
+    emoji: "🧁👨‍🍳",
+    lyrics: [
+      ["Do you know the muffin man","你知道松饼人吗"],["The muffin man the muffin man","松饼人 松饼人"],
+      ["Do you know the muffin man","你知道松饼人吗"],["Who lives on Drury Lane","他住在德鲁里巷"],
+      ["Yes I know the muffin man","是的我知道松饼人"],["The muffin man the muffin man","松饼人 松饼人"],
+      ["Yes I know the muffin man","是的我知道松饼人"],["Who lives on Drury Lane","他住在德鲁里巷"]
+    ]
+  },
+  {
+    name: "Who Took The Cookie?", singer: "Super Simple Songs", file: "audio/10_Who_Took_The_Cookie.m4a",
+    emoji: "🍪🕵️",
+    lyrics: [
+      ["Who took the cookie from the cookie jar","谁从饼干罐里拿了饼干"],["Panda took the cookie from the cookie jar","熊猫从饼干罐里拿了饼干"],
+      ["Who me","谁 我吗"],["Yes you","是的 是你"],["Not me","不是我"],["Then who","那是谁"],["Rabbit","兔子"],
+      ["Who took the cookie from the cookie jar","谁从饼干罐里拿了饼干"],["Rabbit took the cookie from the cookie jar","兔子从饼干罐里拿了饼干"],
+      ["Who me","谁 我吗"],["Yes you","是的 是你"],["Not me","不是我"],["Then who","那是谁"],["Bear","熊"],
+      ["Who took the cookie from the cookie jar","谁从饼干罐里拿了饼干"],["Bear took the cookie from the cookie jar","熊从饼干罐里拿了饼干"],
+      ["Who me","谁 我吗"],["Yes you","是的 是你"],["Not me","不是我"],["Then who","那是谁"],["Penguin","企鹅"],
+      ["Who took the cookie from the cookie jar","谁从饼干罐里拿了饼干"],["Penguin took the cookie from the cookie jar","企鹅从饼干罐里拿了饼干"],
+      ["Who me","谁 我吗"],["Yes you","是的 是你"],["Not me","不是我"],["Then who","那是谁"],["Kangaroo","袋鼠"],
+      ["Who took the cookie from the cookie jar","谁从饼干罐里拿了饼干"],["Kangaroo took the cookie from the cookie jar","袋鼠从饼干罐里拿了饼干"],
+      ["Who me","谁 我吗"],["Yes you","是的 是你"],["Ok ok I took the cookie","好吧好吧 饼干是我拿的"],
+      ["I took the cookie from the cookie jar","我从饼干罐里拿了饼干"],["The yummy yummy cookie from the cookie jar","饼干罐里那美味美味的饼干"],
+      ["Are you hungry","你饿了吗"],["Uh huh","嗯嗯"],["Let's share","我们一起分享吧"]
+    ]
+  },
+  {
+    name: "The Ice Cream Song", singer: "Super Simple Songs", file: "audio/11_The_Ice_Cream_Song.m4a",
+    emoji: "🍦🎵",
+    lyrics: [
+      ["I went into a shop one day","有一天我走进一家店"],["To get an ice cream treat","去买冰淇淋"],
+      ["Cause ice cream is my favorite snack","因为冰淇淋是我最爱的零食"],["My favorite kind of sweet","我最爱的甜食"],
+      ["I counted to 4 and I opened up the door","我数到4 打开了门"],
+      ["Then I saw a purple monkey in a purple tree","然后我看到一只紫色猴子在紫色树上"]
+    ]
+  }
+];
+
+// ===== APP STATE =====
+let currentIndex = 0;
+let isPlaying = false;
+let autoplay = true;
+const audio = document.getElementById('audio');
+const appEl = document.getElementById('app');
+
+// ===== RENDER =====
+function render() {
+  const song = SONGS[currentIndex];
+  appEl.innerHTML = `
+    <div class="player-section">
+      <div class="player-card">
+        <div class="song-emoji">${song.emoji}</div>
+        <div class="song-name">${song.name}</div>
+        <div class="song-singer">${song.singer}</div>
+        <div class="play-btn-wrap">
+          <button class="nav-btn" onclick="prevSong()">⏮</button>
+          <button class="play-btn${isPlaying ? ' playing' : ''}" id="playBtn" onclick="togglePlay()">
+            ${isPlaying ? '⏸' : '▶'}
+          </button>
+          <button class="nav-btn" onclick="nextSong()">⏭</button>
+        </div>
+        <div class="progress-wrap">
+          <span class="progress-time" id="curTime">0:00</span>
+          <div class="progress-bar" id="progressBar" onclick="seek(event)">
+            <div class="progress-fill" id="progressFill"></div>
+          </div>
+          <span class="progress-time" id="durTime">0:00</span>
+        </div>
+        <div class="autoplay-wrap" onclick="toggleAutoplay()">
+          <div class="autoplay-dot${autoplay ? ' on' : ''}" id="autoplayDot"></div>
+          自动连播
+        </div>
+      </div>
+    </div>
+    <div class="lyrics-section">
+      <div class="lyrics-card" id="lyricsCard">
+        <div class="section-title">📖 歌词</div>
+        ${song.lyrics.map(([en, zh]) => `
+          <div class="lyric-line">
+            <span class="en">${en}</span>
+            ${zh ? `<span class="zh">${zh}</span>` : ''}
+          </div>
+        `).join('')}
+      </div>
+    </div>
+    <div class="songlist-section">
+      <div class="songlist-card">
+        <div class="section-title">🎵 歌单 (${SONGS.length}首)</div>
+        ${SONGS.map((s, i) => `
+          <div class="song-item${i === currentIndex ? ' active' : ''}${i === currentIndex && isPlaying ? ' playing' : ''}" onclick="playSong(${i})">
+            <div class="item-num">${i+1}</div>
+            <div class="item-info">
+              <div class="item-name">${s.emoji} ${s.name}</div>
+              <div class="item-singer">${s.singer}</div>
+            </div>
+            <div class="item-playing">🔊</div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+}
+
+// ===== AUDIO CONTROLS =====
+function loadSong(index) {
+  currentIndex = index;
+  const song = SONGS[index];
+  audio.src = song.file;
+  audio.load();
+  render();
+}
+
+function togglePlay() {
+  if (audio.paused || audio.ended) {
+    audio.play().catch(e => console.log('Play failed:', e));
+  } else {
+    audio.pause();
+  }
+}
+
+function playSong(index) {
+  if (index === currentIndex && isPlaying) {
+    audio.pause();
+    return;
+  }
+  loadSong(index);
+  setTimeout(() => audio.play().catch(() => {}), 100);
+}
+
+function nextSong() {
+  playSong((currentIndex + 1) % SONGS.length);
+}
+
+function prevSong() {
+  playSong((currentIndex - 1 + SONGS.length) % SONGS.length);
+}
+
+function toggleAutoplay() {
+  autoplay = !autoplay;
+  document.getElementById('autoplayDot')?.classList.toggle('on', autoplay);
+}
+
+function seek(e) {
+  if (!audio.duration) return;
+  const bar = document.getElementById('progressBar');
+  const rect = bar.getBoundingClientRect();
+  const pct = (e.clientX - rect.left) / rect.width;
+  audio.currentTime = pct * audio.duration;
+}
+
+function formatTime(s) {
+  if (isNaN(s)) return '0:00';
+  const m = Math.floor(s / 60);
+  const sec = Math.floor(s % 60);
+  return `${m}:${sec.toString().padStart(2, '0')}`;
+}
+
+// ===== AUDIO EVENTS =====
+audio.addEventListener('play', () => {
+  isPlaying = true;
+  const btn = document.getElementById('playBtn');
+  const item = document.querySelector(`.song-item.active`);
+  if (btn) { btn.textContent = '⏸'; btn.classList.add('playing'); }
+  if (item) item.classList.add('playing');
+});
+
+audio.addEventListener('pause', () => {
+  isPlaying = false;
+  const btn = document.getElementById('playBtn');
+  const item = document.querySelector(`.song-item.active`);
+  if (btn) { btn.textContent = '▶'; btn.classList.remove('playing'); }
+  if (item) item.classList.remove('playing');
+});
+
+audio.addEventListener('ended', () => {
+  if (autoplay) {
+    nextSong();
+  } else {
+    isPlaying = false;
+    render();
+  }
+});
+
+audio.addEventListener('timeupdate', () => {
+  const fill = document.getElementById('progressFill');
+  const cur = document.getElementById('curTime');
+  if (fill && audio.duration) {
+    fill.style.width = (audio.currentTime / audio.duration * 100) + '%';
+  }
+  if (cur) cur.textContent = formatTime(audio.currentTime);
+});
+
+audio.addEventListener('loadedmetadata', () => {
+  const dur = document.getElementById('durTime');
+  if (dur) dur.textContent = formatTime(audio.duration);
+});
+
+audio.addEventListener('error', () => {
+  console.warn('Audio load error for:', audio.src);
+});
+
+// ===== PWA INSTALL =====
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  document.getElementById('installBanner').classList.add('show');
+});
+
+function installApp() {
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then(() => {
+      document.getElementById('installBanner').classList.remove('show');
+      deferredPrompt = null;
+    });
+  }
+}
+
+window.addEventListener('appinstalled', () => {
+  document.getElementById('installBanner').classList.remove('show');
+});
+
+// ===== INIT =====
+loadSong(0);
+</script>
+
+</body>
+</html>
