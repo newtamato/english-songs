@@ -27,7 +27,6 @@ jobs:
           mkdir -p app/src/main/res/values
           mkdir -p app/src/main/assets
 
-          # ---- AndroidManifest.xml ----
           cat > app/src/main/AndroidManifest.xml << 'EOF'
           <?xml version="1.0" encoding="utf-8"?>
           <manifest xmlns:android="http://schemas.android.com/apk/res/android">
@@ -52,24 +51,20 @@ jobs:
           </manifest>
           EOF
 
-          # ---- MainActivity.java ----
           cat > app/src/main/java/$PKG/MainActivity.java << 'JAVAEOF'
           package com.happyzh.numberblocks;
           import android.app.Activity;
           import android.os.Bundle;
           import android.view.View;
           import android.webkit.*;
-          import android.widget.Toast;
           public class MainActivity extends Activity {
               private WebView wv;
-
               @Override
-              protected void onCreate(Bundle savedInstanceState) {
-                  super.onCreate(savedInstanceState);
+              protected void onCreate(Bundle s) {
+                  super.onCreate(s);
                   getWindow().getDecorView().setSystemUiVisibility(
                       View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
                       | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
-
                   wv = new WebView(this);
                   WebSettings ws = wv.getSettings();
                   ws.setJavaScriptEnabled(true);
@@ -80,30 +75,18 @@ jobs:
                   ws.setMediaPlaybackRequiresUserGesture(false);
                   ws.setUseWideViewPort(true);
                   ws.setLoadWithOverviewMode(true);
+                  ws.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
                   wv.setWebViewClient(new WebViewClient());
-                  wv.setWebChromeClient(new WebChromeClient() {
-                      @Override
-                      public void onShowCustomView(View view, CustomViewCallback cb) {
-                          setContentView(view);
-                      }
-                  });
+                  wv.setWebChromeClient(new WebChromeClient());
                   wv.loadUrl("file:///android_asset/index.html");
                   setContentView(wv);
               }
-
-              @Override
-              public void onBackPressed() {
-                  if (wv.canGoBack() && wv.getUrl() != null
-                      && !wv.getUrl().contains("player.bilibili.com")) {
-                      wv.goBack();
-                  } else {
-                      super.onBackPressed();
-                  }
+              @Override public void onBackPressed() {
+                  wv.loadUrl("javascript:closePlayer()");
               }
           }
           JAVAEOF
 
-          # ---- index.html (main UI + player) ----
           cat > app/src/main/assets/index.html << 'HTMLEOF'
           <!DOCTYPE html>
           <html lang="zh">
@@ -118,47 +101,50 @@ jobs:
           .header h1 span{background:linear-gradient(135deg,#ff6b6b,#ffd93d,#6bcb77,#4d96ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
           .header p{color:#8888aa;margin-top:8px;font-size:14px}
           .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:20px;padding:20px;max-width:1200px;margin:0 auto}
-          .card{border-radius:24px;padding:28px 24px;cursor:pointer;transition:transform .15s,box-shadow .15s;position:relative;overflow:hidden;min-height:180px;display:flex;flex-direction:column;justify-content:flex-end}
+          .card{border-radius:24px;padding:28px 24px;cursor:pointer;transition:transform .15s;position:relative;overflow:hidden;min-height:180px;display:flex;flex-direction:column;justify-content:flex-end}
           .card:active{transform:scale(.96)}
           .card .num{position:absolute;top:16px;right:20px;font-size:72px;font-weight:900;opacity:.15;color:#fff}
           .card .season{font-size:13px;color:rgba(255,255,255,.7);text-transform:uppercase;letter-spacing:3px;margin-bottom:6px}
           .card .title{font-size:24px;font-weight:800;color:#fff;margin-bottom:4px}
           .card .dur{font-size:13px;color:rgba(255,255,255,.6);margin-bottom:8px}
-          .card .play-btn{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.2);padding:8px 18px;border-radius:20px;font-size:14px;color:#fff;backdrop-filter:blur(4px);width:fit-content}
+          .card .play-btn{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.2);padding:8px 18px;border-radius:20px;font-size:14px;color:#fff;width:fit-content}
           .card:nth-child(1){background:linear-gradient(135deg,#e94560,#c23152)}
           .card:nth-child(2){background:linear-gradient(135deg,#0f3460,#16213e)}
           .card:nth-child(3){background:linear-gradient(135deg,#533483,#3b1f6e)}
           .card:nth-child(4){background:linear-gradient(135deg,#1a936f,#114b3e)}
           .card:nth-child(5){background:linear-gradient(135deg,#e76f51,#c14c2c)}
           .player-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:#000;z-index:9999}
-          .player-overlay iframe{width:100%;height:100%;border:none}
-          .close-btn{position:absolute;top:16px;right:16px;width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.15);border:none;color:#fff;font-size:22px;cursor:pointer;z-index:10;display:flex;align-items:center;justify-content:center}
-          .loading{display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);color:#fff;font-size:18px;z-index:9998;background:rgba(0,0,0,.7);padding:16px 32px;border-radius:12px}
-          @media(max-width:600px){.grid{grid-template-columns:1fr}.card{min-height:140px}.card .title{font-size:20px}}
+          .player-overlay video{width:100%;height:100%;object-fit:contain}
+          .close-btn{position:absolute;top:16px;right:16px;width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.15);border:none;color:#fff;font-size:24px;cursor:pointer;z-index:10;display:flex;align-items:center;justify-content:center}
+          .loading{display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);color:#fff;font-size:18px;z-index:9998;background:rgba(0,0,0,.8);padding:20px 36px;border-radius:16px;text-align:center}
+          .loading .spinner{width:32px;height:32px;border:3px solid rgba(255,255,255,.2);border-top-color:#fff;border-radius:50%;margin:0 auto 10px;animation:spin .8s linear infinite}
+          @keyframes spin{to{transform:rotate(360deg)}}
+          .error-msg{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);color:#ff6b6b;font-size:16px;z-index:9998;background:rgba(0,0,0,.85);padding:20px 32px;border-radius:12px;text-align:center;display:none}
+          @media(max-width:600px){.grid{grid-template-columns:1fr}.card{min-height:140px}}
           </style>
           </head>
           <body>
 
           <div class="header">
             <h1><span>Numberblocks</span></h1>
-            <p>数字积木 · 1-5季 · 中文配音</p>
+            <p>数字积木 · 1-5季 · 中文配音 · 720P</p>
           </div>
-
           <div class="grid" id="grid"></div>
-          <div class="loading" id="loading">加载中...</div>
+          <div class="loading" id="loading"><div class="spinner"></div>加载中...</div>
+          <div class="error-msg" id="error"></div>
           <div class="player-overlay" id="player">
             <button class="close-btn" onclick="closePlayer()">✕</button>
-            <div id="playerContainer" style="width:100%;height:100%"></div>
+            <video id="video" controls playsinline webkit-playsinline></video>
           </div>
 
           <script>
-          const BVID = 'BV1DiYYzkEWY';
-          const EPISODES = [
-            {season:'Season 1',title:'第一季',dur:'95分钟',page:1,cid:'31732138151'},
-            {season:'Season 2',title:'第二季',dur:'237分钟',page:2,cid:'31732141725'},
-            {season:'Season 3',title:'第三季',dur:'157分钟',page:3,cid:'31732204146'},
-            {season:'Season 4',title:'第四季',dur:'240分钟',page:4,cid:'31732271722'},
-            {season:'Season 5',title:'第五季',dur:'68分钟',page:5,cid:'31732335213'}
+          var BVID = 'BV1DiYYzkEWY';
+          var EPISODES = [
+            {season:'Season 1',title:'第一季',dur:'95min',cid:'31732138151'},
+            {season:'Season 2',title:'第二季',dur:'237min',cid:'31732141725'},
+            {season:'Season 3',title:'第三季',dur:'157min',cid:'31732204146'},
+            {season:'Season 4',title:'第四季',dur:'240min',cid:'31732271722'},
+            {season:'Season 5',title:'第五季',dur:'68min',cid:'31732335213'}
           ];
 
           function buildCards() {
@@ -178,24 +164,59 @@ jobs:
           }
 
           function playEpisode(index) {
-            var ep = EPISODES[index];
             var loading = document.getElementById('loading');
+            var error = document.getElementById('error');
             var player = document.getElementById('player');
+            var video = document.getElementById('video');
+
             loading.style.display = 'block';
-            player.style.display = 'block';
+            error.style.display = 'none';
 
-            var container = document.getElementById('playerContainer');
-            container.innerHTML = '<iframe src="https://player.bilibili.com/player.html'+
-              '?bvid='+BVID+'&page='+ep.page+
-              '&autoplay=1&high_quality=1&danmaku=0'+
-              '" allow="autoplay;fullscreen" allowfullscreen></iframe>';
+            var ep = EPISODES[index];
+            var api = 'https://api.bilibili.com/x/player/playurl'+
+              '?bvid='+BVID+'&cid='+ep.cid+'&qn=64&fnval=1&fourk=1';
 
-            setTimeout(function(){ loading.style.display = 'none'; }, 2500);
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', api, true);
+            xhr.timeout = 10000;
+            xhr.onload = function() {
+              if (xhr.status === 200) {
+                try {
+                  var json = JSON.parse(xhr.responseText);
+                  var url = json.data.durl[0].url;
+                  // Replace http with https for WebView compatibility
+                  url = url.replace(/^http:/, 'https:');
+                  video.src = url;
+                  video.load();
+                  player.style.display = 'block';
+                  video.play().catch(function(){});
+                  loading.style.display = 'none';
+                } catch(e) {
+                  showError('视频地址解析失败');
+                }
+              } else {
+                showError('网络错误 ('+xhr.status+')');
+              }
+            };
+            xhr.onerror = function() { showError('无法连接B站服务器'); };
+            xhr.ontimeout = function() { showError('请求超时，请重试'); };
+            xhr.send();
+          }
+
+          function showError(msg) {
+            document.getElementById('loading').style.display = 'none';
+            var e = document.getElementById('error');
+            e.textContent = msg;
+            e.style.display = 'block';
+            setTimeout(function(){ e.style.display = 'none'; }, 3000);
           }
 
           function closePlayer() {
+            var video = document.getElementById('video');
+            video.pause();
+            video.src = '';
+            video.load();
             document.getElementById('player').style.display = 'none';
-            document.getElementById('playerContainer').innerHTML = '';
           }
 
           buildCards();
@@ -204,7 +225,6 @@ jobs:
           </html>
           HTMLEOF
 
-          # ---- Styles ----
           cat > app/src/main/res/values/styles.xml << 'EOF'
           <?xml version="1.0" encoding="utf-8"?>
           <resources>
@@ -212,7 +232,6 @@ jobs:
           </resources>
           EOF
 
-          # ---- Build files ----
           cat > build.gradle << 'EOF'
           buildscript {
               repositories { google(); mavenCentral() }
@@ -228,7 +247,7 @@ jobs:
               compileSdk 33
               defaultConfig {
                   applicationId "com.happyzh.numberblocks"
-                  minSdk 21; targetSdk 33; versionCode 3; versionName "2.0"
+                  minSdk 21; targetSdk 33; versionCode 4; versionName "2.1"
               }
               buildTypes { debug { minifyEnabled false } }
           }
