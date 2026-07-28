@@ -23,21 +23,25 @@ jobs:
       - name: Install Bubblewrap
         run: npm install -g @bubblewrap/cli
 
+      - name: Init TWA project
+        run: |
+          bubblewrap init --manifest="https://raw.githubusercontent.com/newtamato/english-songs/main/manifest.json" --directory twa
+
       - name: Generate signing key
         run: |
-          keytool -genkey -v -keystore release.keystore -alias englishsongs \
+          keytool -genkey -v -keystore twa/release.keystore -alias englishsongs \
             -keyalg RSA -keysize 2048 -validity 10000 \
-            -storepass android -keypass android \
+            -storepass android123 -keypass android123 \
             -dname "CN=English Songs, OU=Dev, O=Happyzh, L=Beijing, ST=Beijing, C=CN"
 
-      - name: Init TWA
+      - name: Update signing config
         run: |
-          mkdir -p twa
-          cat > twa/twa-manifest.json << 'EOF'
+          cd twa
+          cat > twa-manifest.json << 'ENDMANIFEST'
           {
             "packageId": "com.happyzh.english.songs",
             "host": "newtamato.github.io",
-            "name": "English Songs for Kids",
+            "name": "English Songs",
             "launcherName": "Food Songs",
             "display": "standalone",
             "themeColor": "#FF6B6B",
@@ -47,19 +51,20 @@ jobs:
             "maskableIconUrl": "https://raw.githubusercontent.com/newtamato/english-songs/main/icon-512.png",
             "splashScreenFadeOutDuration": 300,
             "signingKey": {
-              "path": "../release.keystore",
+              "path": "./release.keystore",
               "alias": "englishsongs"
             },
             "appVersionName": "1.0",
             "appVersionCode": 1
           }
-          EOF
+          ENDMANIFEST
 
       - name: Build APK
         run: |
           cd twa
-          PASS=$(echo YW5kcm9pZA== | base64 -d)
-          bubblewrap build --storePassword="$PASS" --keyPassword="$PASS"
+          PASS=android123
+          bubblewrap build --storePassword="${PASS}" --keyPassword="${PASS}"
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
