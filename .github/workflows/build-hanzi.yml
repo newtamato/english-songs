@@ -1,0 +1,312 @@
+name: Build Hanzi Writer APK
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: 'platforms;android-33 build-tools;33.0.2'
+
+      - name: Create project
+        run: |
+          PKG=com/happyzh/hanzi
+          mkdir -p app/src/main/java/$PKG
+          mkdir -p app/src/main/res/values
+          mkdir -p app/src/main/assets
+
+          cat > app/src/main/AndroidManifest.xml << 'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+              <uses-permission android:name="android.permission.INTERNET" />
+              <application
+                  android:allowBackup="true"
+                  android:label="汉字描红"
+                  android:theme="@style/Theme.App"
+                  android:usesCleartextTraffic="true"
+                  android:hardwareAccelerated="true">
+                  <activity
+                      android:name=".MainActivity"
+                      android:exported="true"
+                      android:screenOrientation="sensorLandscape"
+                      android:configChanges="orientation|screenSize">
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN" />
+                          <category android:name="android.intent.category.LAUNCHER" />
+                      </intent-filter>
+                  </activity>
+              </application>
+          </manifest>
+          EOF
+
+          cat > app/src/main/java/$PKG/MainActivity.java << 'JAVAEOF'
+          package com.happyzh.hanzi;
+          import android.app.Activity;
+          import android.os.Bundle;
+          import android.view.View;
+          import android.webkit.*;
+          public class MainActivity extends Activity {
+              private WebView wv;
+              @Override protected void onCreate(Bundle s) {
+                  super.onCreate(s);
+                  getWindow().getDecorView().setSystemUiVisibility(
+                      View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                      | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
+                  wv = new WebView(this);
+                  WebSettings ws = wv.getSettings();
+                  ws.setJavaScriptEnabled(true);
+                  ws.setDomStorageEnabled(true);
+                  ws.setAllowFileAccess(true);
+                  ws.setAllowFileAccessFromFileURLs(true);
+                  ws.setMediaPlaybackRequiresUserGesture(false);
+                  ws.setUseWideViewPort(true);
+                  ws.setLoadWithOverviewMode(true);
+                  wv.setWebViewClient(new WebViewClient());
+                  wv.setWebChromeClient(new WebChromeClient());
+                  wv.loadUrl("file:///android_asset/index.html");
+                  setContentView(wv);
+              }
+          }
+          JAVAEOF
+
+          cat > app/src/main/assets/index.html << 'HTMLEOF'
+          <!DOCTYPE html>
+          <html lang="zh">
+          <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+          <script src="https://cdn.jsdelivr.net/npm/hanzi-writer@3.6/dist/hanzi-writer.min.js"></script>
+          <style>
+          *{margin:0;padding:0;box-sizing:border-box}
+          body{background:#f5f0e8;font-family:'PingFang SC','Microsoft YaHei',sans-serif;overflow-x:hidden;user-select:none;-webkit-tap-highlight-color:transparent}
+          .app{display:flex;height:100vh;height:100dvh}
+          .sidebar{width:240px;background:#2c1810;color:#e8d5c4;display:flex;flex-direction:column;overflow-y:auto;flex-shrink:0}
+          .sidebar h2{font-size:18px;padding:20px 16px 12px;color:#d4a574;border-bottom:1px solid #3d2a1a}
+          .char-grid{display:flex;flex-wrap:wrap;gap:6px;padding:12px}
+          .char-btn{width:52px;height:52px;border-radius:10px;border:2px solid #3d2a1a;background:#1a0f0a;color:#e8d5c4;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s}
+          .char-btn:active,.char-btn.active{background:#8b4513;border-color:#d4a574;transform:scale(1.05)}
+          .main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;padding:20px}
+          .char-display{position:relative;width:320px;height:320px}
+          .grid-bg{position:absolute;inset:0}
+          .grid-bg::before,.grid-bg::after{content:'';position:absolute;background:rgba(139,69,19,.15)}
+          .grid-bg::before{left:50%;top:0;bottom:0;width:2px;transform:translateX(-50%)}
+          .grid-bg::after{left:0;right:0;top:50%;height:2px;transform:translateY(-50%)}
+          .grid-diag1,.grid-diag2{position:absolute;background:rgba(139,69,19,.08);top:0;left:0;right:0;bottom:0}
+          .grid-diag1{background:linear-gradient(to top right,transparent calc(50% - 1px),rgba(139,69,19,.12) 50%,transparent calc(50% + 1px))}
+          .grid-diag2{background:linear-gradient(to top left,transparent calc(50% - 1px),rgba(139,69,19,.12) 50%,transparent calc(50% + 1px))}
+          .grid-border{position:absolute;inset:0;border:3px solid #8b4513;border-radius:4px}
+          #target{position:absolute;inset:10px}
+          .info-bar{display:flex;align-items:center;gap:12px;font-size:16px;color:#5c3a21}
+          .info-bar .pinyin{font-size:20px;font-weight:600;color:#8b4513}
+          .controls{display:flex;gap:12px}
+          .btn{padding:14px 28px;border-radius:14px;border:none;font-size:18px;font-weight:700;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:8px}
+          .btn:active{transform:scale(.95)}
+          .btn-primary{background:#8b4513;color:#fff}
+          .btn-outline{background:transparent;border:2px solid #8b4513;color:#8b4513}
+          .btn-success{background:#2d6a4f;color:#fff}
+          .feedback{font-size:28px;text-align:center;padding:8px;min-height:40px;color:#2d6a4f;font-weight:700}
+          .stroke-hint{margin-top:6px;font-size:13px;color:#8b4513;text-align:center}
+          @media(max-width:600px){.sidebar{width:160px}.char-display{width:220px;height:220px}.btn{padding:12px 20px;font-size:16px}}
+          </style>
+          </head>
+          <body>
+          <div class="app">
+            <div class="sidebar">
+              <h2>📝 选一个字</h2>
+              <div class="char-grid" id="charGrid"></div>
+            </div>
+            <div class="main">
+              <div class="char-display">
+                <div class="grid-bg"></div>
+                <div class="grid-diag1"></div>
+                <div class="grid-diag2"></div>
+                <div class="grid-border"></div>
+                <div id="target"></div>
+              </div>
+              <div class="info-bar">
+                <span id="currentChar" style="font-size:28px">一</span>
+                <span class="pinyin" id="pinyin"></span>
+              </div>
+              <div class="feedback" id="feedback"></div>
+              <div class="controls">
+                <button class="btn btn-outline" onclick="showAnimation()">🎬 看笔顺</button>
+                <button class="btn btn-primary" onclick="startQuiz()">✏️ 描红</button>
+                <button class="btn btn-success" onclick="nextChar()">➡️ 下一个</button>
+              </div>
+              <div class="stroke-hint" id="hint">跟着轮廓一笔一笔描</div>
+            </div>
+          </div>
+
+          <script>
+          // ---- Word list for kids (Grade 1 common chars) ----
+          var WORDS = [
+            {char:'一',py:'yī'},{char:'二',py:'èr'},{char:'三',py:'sān'},{char:'四',py:'sì'},
+            {char:'五',py:'wǔ'},{char:'六',py:'liù'},{char:'七',py:'qī'},{char:'八',py:'bā'},
+            {char:'九',py:'jiǔ'},{char:'十',py:'shí'},{char:'人',py:'rén'},{char:'大',py:'dà'},
+            {char:'天',py:'tiān'},{char:'日',py:'rì'},{char:'月',py:'yuè'},{char:'水',py:'shuǐ'},
+            {char:'火',py:'huǒ'},{char:'山',py:'shān'},{char:'石',py:'shí'},{char:'田',py:'tián'},
+            {char:'土',py:'tǔ'},{char:'木',py:'mù'},{char:'禾',py:'hé'},{char:'口',py:'kǒu'},
+            {char:'目',py:'mù'},{char:'耳',py:'ěr'},{char:'手',py:'shǒu'},{char:'上',py:'shàng'},
+            {char:'下',py:'xià'},{char:'左',py:'zuǒ'},{char:'右',py:'yòu'},{char:'中',py:'zhōng'},
+            {char:'大',py:'dà'},{char:'小',py:'xiǎo'},{char:'多',py:'duō'},{char:'少',py:'shǎo'},
+            {char:'白',py:'bái'},{char:'云',py:'yún'},{char:'风',py:'fēng'},{char:'雨',py:'yǔ'},
+            {char:'花',py:'huā'},{char:'草',py:'cǎo'},{char:'虫',py:'chóng'},{char:'鸟',py:'niǎo'},
+            {char:'鱼',py:'yú'},{char:'马',py:'mǎ'},{char:'牛',py:'niú'},{char:'羊',py:'yáng'}
+          ];
+
+          var currentIdx = 0;
+          var writer = null;
+          var isQuizActive = false;
+
+          function buildCharGrid() {
+            var g = document.getElementById('charGrid');
+            WORDS.forEach(function(w, i) {
+              var btn = document.createElement('button');
+              btn.className = 'char-btn';
+              btn.textContent = w.char;
+              btn.onclick = function(){ selectChar(i); };
+              g.appendChild(btn);
+            });
+          }
+
+          function selectChar(idx) {
+            currentIdx = idx;
+            var w = WORDS[idx];
+            document.getElementById('currentChar').textContent = w.char;
+            document.getElementById('pinyin').textContent = w.py;
+            document.getElementById('feedback').textContent = '';
+            document.getElementById('hint').textContent = '跟着轮廓一笔一笔描';
+            // highlight active
+            var btns = document.querySelectorAll('.char-btn');
+            btns.forEach(function(b,i){ b.classList.toggle('active', i===idx); });
+            resetWriter();
+          }
+
+          function resetWriter() {
+            if (writer) {
+              try { writer.hideCharacter(); } catch(e){}
+              writer = null;
+            }
+            isQuizActive = false;
+            document.getElementById('target').innerHTML = '';
+            var w = WORDS[currentIdx];
+            writer = HanziWriter.create('target', w.char, {
+              width: 300, height: 300, padding: 20,
+              strokeColor: '#2c1810',
+              radicalColor: '#8b4513',
+              outlineColor: '#d4a574',
+              highlightColor: 'rgba(139,69,19,.25)',
+              drawingColor: '#c0392b',
+              drawingWidth: 6,
+              showCharacter: true,
+              showHintAfterMisses: 2,
+              leniency: 1.2,
+              acceptBackwardsStrokes: true,
+              markStrokeCorrectAfterMisses: 4,
+              highlightOnComplete: true
+            });
+          }
+
+          function showAnimation() {
+            if (isQuizActive) { resetWriter(); }
+            writer.animateCharacter({
+              onComplete: function() {
+                document.getElementById('hint').textContent = '笔顺演示完成，点击「描红」开始练习';
+              }
+            });
+            document.getElementById('feedback').textContent = '🎬';
+          }
+
+          function startQuiz() {
+            if (writer) { resetWriter(); }
+            isQuizActive = true;
+            document.getElementById('feedback').textContent = '';
+            document.getElementById('hint').textContent = '用手指跟着描 ✍️';
+            writer.quiz({
+              onCorrectStroke: function(data) {
+                var total = data.strokeNum;
+                document.getElementById('feedback').textContent = '✅ 第'+total+'笔';
+              },
+              onMistake: function(data) {
+                document.getElementById('feedback').textContent = '🔄 再试一次';
+              },
+              onComplete: function(data) {
+                document.getElementById('feedback').textContent = '🎉 写对了！真棒！';
+                document.getElementById('hint').textContent = '太厉害了！点击「下一个」继续';
+              }
+            });
+          }
+
+          function nextChar() {
+            selectChar((currentIdx + 1) % WORDS.length);
+            resetWriter();
+          }
+
+          buildCharGrid();
+          selectChar(0);
+          </script>
+          </body>
+          </html>
+          HTMLEOF
+
+          cat > app/src/main/res/values/styles.xml << 'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <resources>
+              <style name="Theme.App" parent="android:Theme.Black.NoTitleBar.Fullscreen" />
+          </resources>
+          EOF
+
+          cat > build.gradle << 'EOF'
+          buildscript {
+              repositories { google(); mavenCentral() }
+              dependencies { classpath 'com.android.tools.build:gradle:8.2.0' }
+          }
+          allprojects { repositories { google(); mavenCentral() } }
+          EOF
+
+          cat > app/build.gradle << 'EOF'
+          plugins { id 'com.android.application' }
+          android {
+              namespace 'com.happyzh.hanzi'
+              compileSdk 33
+              defaultConfig {
+                  applicationId "com.happyzh.hanzi"
+                  minSdk 21; targetSdk 33; versionCode 1; versionName "1.0"
+              }
+              buildTypes { debug { minifyEnabled false } }
+          }
+          EOF
+
+          cat > settings.gradle << 'EOF'
+          rootProject.name = "HanziWriter"
+          include ':app'
+          EOF
+
+          cat > gradle.properties << 'EOF'
+          android.useAndroidX=false
+          org.gradle.jvmargs=-Xmx2048m
+          EOF
+
+      - name: Build APK
+        run: |
+          export ANDROID_HOME=$ANDROID_SDK_ROOT
+          gradle wrapper --gradle-version 8.5
+          ./gradlew :app:assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: hanzi-writer
+          path: app/build/outputs/apk/debug/app-debug.apk
