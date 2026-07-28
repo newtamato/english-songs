@@ -28,7 +28,6 @@ jobs:
           mkdir -p app/src/main/java/$PKG
           mkdir -p app/src/main/res/values
           mkdir -p app/src/main/res/layout
-          mkdir -p app/src/main/res/mipmap-hdpi
           mkdir -p app/src/main/res/drawable
 
           # ---- AndroidManifest.xml ----
@@ -39,7 +38,6 @@ jobs:
               <application
                   android:allowBackup="true"
                   android:label="Numberblocks"
-                  android:icon="@mipmap/ic_launcher"
                   android:theme="@style/Theme.App"
                   android:requestLegacyExternalStorage="true">
                   <activity
@@ -282,18 +280,6 @@ jobs:
               <style name="Theme.Player" parent="android:Theme.Black.NoTitleBar.Fullscreen" />
           </resources>
           EOF
-
-          # ---- Launcher icon (simple colored shape) ----
-          # Generate simple launcher icon
-          python3 -c "
-from PIL import Image, ImageDraw
-img = Image.new('RGB', (192,192), '#e94560')
-d = ImageDraw.Draw(img)
-d.rectangle([20,40,60,170], fill='#ffffff')
-d.rectangle([70,40,110,170], fill='#0f3460')
-d.rectangle([120,40,160,170], fill='#ffffff')
-img.save('app/src/main/res/mipmap-hdpi/ic_launcher.png')
-" 2>/dev/null || echo "Pillow not available, skipping icon"
 
           # ---- Build files ----
           cat > build.gradle << 'EOF'
