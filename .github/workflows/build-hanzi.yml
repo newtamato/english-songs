@@ -55,7 +55,7 @@ jobs:
           package com.happyzh.hanzi;
           import android.app.Activity;
           import android.os.Bundle;
-          import android.view.View;
+          import android.view.*;
           import android.webkit.*;
           public class MainActivity extends Activity {
               private WebView wv;
@@ -70,11 +70,20 @@ jobs:
                   ws.setDomStorageEnabled(true);
                   ws.setAllowFileAccess(true);
                   ws.setAllowFileAccessFromFileURLs(true);
+                  ws.setAllowUniversalAccessFromFileURLs(true);
                   ws.setMediaPlaybackRequiresUserGesture(false);
                   ws.setUseWideViewPort(true);
                   ws.setLoadWithOverviewMode(true);
+                  ws.setSupportZoom(false);
+                  ws.setBuiltInZoomControls(false);
+                  ws.setDisplayZoomControls(false);
                   wv.setWebViewClient(new WebViewClient());
                   wv.setWebChromeClient(new WebChromeClient());
+                  wv.setOnTouchListener(new View.OnTouchListener() {
+                      @Override public boolean onTouch(View v, MotionEvent e) {
+                          return false;
+                      }
+                  });
                   wv.loadUrl("file:///android_asset/index.html");
                   setContentView(wv);
               }
@@ -90,172 +99,314 @@ jobs:
           <script src="https://cdn.jsdelivr.net/npm/hanzi-writer@3.6/dist/hanzi-writer.min.js"></script>
           <style>
           *{margin:0;padding:0;box-sizing:border-box}
-          body{background:#f5f0e8;font-family:'PingFang SC','Microsoft YaHei',sans-serif;overflow-x:hidden;user-select:none;-webkit-tap-highlight-color:transparent}
-          .app{display:flex;height:100vh;height:100dvh}
-          .sidebar{width:240px;background:#2c1810;color:#e8d5c4;display:flex;flex-direction:column;overflow-y:auto;flex-shrink:0}
-          .sidebar h2{font-size:18px;padding:20px 16px 12px;color:#d4a574;border-bottom:1px solid #3d2a1a}
-          .char-grid{display:flex;flex-wrap:wrap;gap:6px;padding:12px}
-          .char-btn{width:52px;height:52px;border-radius:10px;border:2px solid #3d2a1a;background:#1a0f0a;color:#e8d5c4;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s}
-          .char-btn:active,.char-btn.active{background:#8b4513;border-color:#d4a574;transform:scale(1.05)}
-          .main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;padding:20px}
-          .char-display{position:relative;width:320px;height:320px}
-          .grid-bg{position:absolute;inset:0}
-          .grid-bg::before,.grid-bg::after{content:'';position:absolute;background:rgba(139,69,19,.15)}
-          .grid-bg::before{left:50%;top:0;bottom:0;width:2px;transform:translateX(-50%)}
-          .grid-bg::after{left:0;right:0;top:50%;height:2px;transform:translateY(-50%)}
-          .grid-diag1,.grid-diag2{position:absolute;background:rgba(139,69,19,.08);top:0;left:0;right:0;bottom:0}
-          .grid-diag1{background:linear-gradient(to top right,transparent calc(50% - 1px),rgba(139,69,19,.12) 50%,transparent calc(50% + 1px))}
-          .grid-diag2{background:linear-gradient(to top left,transparent calc(50% - 1px),rgba(139,69,19,.12) 50%,transparent calc(50% + 1px))}
-          .grid-border{position:absolute;inset:0;border:3px solid #8b4513;border-radius:4px}
-          #target{position:absolute;inset:10px}
-          .info-bar{display:flex;align-items:center;gap:12px;font-size:16px;color:#5c3a21}
-          .info-bar .pinyin{font-size:20px;font-weight:600;color:#8b4513}
-          .controls{display:flex;gap:12px}
-          .btn{padding:14px 28px;border-radius:14px;border:none;font-size:18px;font-weight:700;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:8px}
-          .btn:active{transform:scale(.95)}
+          html,body{width:100%;height:100%;overflow:hidden;touch-action:manipulation;-webkit-user-select:none;user-select:none}
+          body{background:#f5f0e8;font-family:'PingFang SC','Microsoft YaHei',sans-serif}
+
+          /* ====== SCREEN 1: character picker ====== */
+          .screen-picker{position:fixed;inset:0;display:flex;flex-direction:column;z-index:10;transition:transform .4s cubic-bezier(.4,0,.2,1)}
+          .screen-picker.hidden{transform:translateX(-100%)}
+          .picker-header{background:linear-gradient(135deg,#2c1810,#5c3a21);padding:24px 20px;text-align:center;flex-shrink:0}
+          .picker-header h1{color:#f5d6b8;font-size:28px;font-weight:900}
+          .picker-header p{color:#b8956e;font-size:13px;margin-top:4px}
+          .picker-scroll{flex:1;overflow-y:auto;padding:16px;-webkit-overflow-scrolling:touch}
+          .category-title{color:#5c3a21;font-size:14px;font-weight:700;padding:12px 4px 8px;text-transform:uppercase;letter-spacing:2px}
+          .char-grid{display:flex;flex-wrap:wrap;gap:10px}
+          .char-card{width:64px;height:64px;border-radius:14px;border:2px solid #d4b896;background:#fff;font-size:26px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+          .char-card:active{transform:scale(.92);background:#8b4513;color:#fff;border-color:#8b4513}
+
+          /* ====== SCREEN 2: tracing ====== */
+          .screen-trace{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;gap:12px;z-index:20;background:#f5f0e8}
+          .screen-trace.active{display:flex}
+          .trace-top{display:flex;align-items:center;gap:16px;padding:12px 20px}
+          .back-btn{background:#8b4513;color:#fff;border:none;padding:10px 20px;border-radius:10px;font-size:16px;cursor:pointer}
+          .trace-char-info{font-size:22px;color:#5c3a21;font-weight:700}
+          .trace-char-info .py{font-size:16px;color:#b8956e;font-weight:400;margin-left:8px}
+          .stroke-counter{font-size:14px;color:#8b4513;margin-left:auto}
+          .canvas-wrap{position:relative;width:min(380px,90vmin);height:min(380px,90vmin);touch-action:none}
+          .grid-layer{position:absolute;inset:0;pointer-events:none}
+          .grid-layer::before,.grid-layer::after{content:'';position:absolute;background:rgba(139,69,19,.12)}
+          .grid-layer::before{left:50%;top:0;bottom:0;width:1.5px}
+          .grid-layer::after{left:0;right:0;top:50%;height:1.5px}
+          .grid-x1,.grid-x2{position:absolute;inset:0;pointer-events:none}
+          .grid-x1{background:linear-gradient(to top right,transparent calc(50% - .5px),rgba(139,69,19,.07) 50%,transparent calc(50% + .5px))}
+          .grid-x2{background:linear-gradient(to top left,transparent calc(50% - .5px),rgba(139,69,19,.07) 50%,transparent calc(50% + .5px))}
+          .grid-border{position:absolute;inset:0;border:2.5px solid #8b4513;border-radius:6px;pointer-events:none}
+          #writer-target{position:absolute;inset:12px;touch-action:none}
+          #writer-target svg{width:100%;height:100%}
+          #writer-target svg *{touch-action:none}
+          .trace-buttons{display:flex;gap:10px}
+          .btn{padding:12px 24px;border-radius:12px;border:none;font-size:17px;font-weight:700;cursor:pointer}
+          .btn-outline{background:#fff;border:2px solid #8b4513;color:#8b4513}
           .btn-primary{background:#8b4513;color:#fff}
-          .btn-outline{background:transparent;border:2px solid #8b4513;color:#8b4513}
-          .btn-success{background:#2d6a4f;color:#fff}
-          .feedback{font-size:28px;text-align:center;padding:8px;min-height:40px;color:#2d6a4f;font-weight:700}
-          .stroke-hint{margin-top:6px;font-size:13px;color:#8b4513;text-align:center}
-          @media(max-width:600px){.sidebar{width:160px}.char-display{width:220px;height:220px}.btn{padding:12px 20px;font-size:16px}}
+          .btn-clear{background:#e74c3c;color:#fff}
+          .trace-msg{font-size:18px;font-weight:700;min-height:28px;text-align:center}
+
+          /* ====== FIREWORKS ====== */
+          .fireworks-overlay{position:fixed;inset:0;z-index:100;display:none;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,.75)}
+          .fireworks-overlay.show{display:flex}
+          .fireworks-text{font-size:42px;font-weight:900;color:#ffd700;text-shadow:0 0 20px rgba(255,215,0,.5);animation:pop .5s ease-out}
+          @keyframes pop{0%{transform:scale(0);opacity:0}70%{transform:scale(1.2)}100%{transform:scale(1);opacity:1}}
+          .fireworks-sub{font-size:20px;color:#fff;margin:12px 0 24px}
+          .fw-buttons{display:flex;gap:16px}
+          .fw-btn{padding:16px 32px;border-radius:16px;border:none;font-size:20px;font-weight:700;cursor:pointer;transition:transform .15s}
+          .fw-btn:active{transform:scale(.93)}
+          .fw-btn-next{background:#ffd700;color:#2c1810}
+          .fw-btn-retry{background:rgba(255,255,255,.15);color:#fff;border:2px solid rgba(255,255,255,.3)}
+
+          /* ====== PARTICLES ====== */
+          .particle{position:fixed;pointer-events:none;z-index:101;border-radius:50%;animation:boom .8s ease-out forwards}
+          @keyframes boom{0%{opacity:1;transform:translate(0,0) scale(1)}100%{opacity:0;transform:translate(var(--x),var(--y)) scale(0)}}
+
+          /* loading spinner */
+          .spinner-overlay{position:fixed;inset:0;z-index:50;display:none;align-items:center;justify-content:center;background:rgba(245,240,232,.8)}
+          .spinner-overlay.show{display:flex}
+          .spinner{width:40px;height:40px;border:4px solid #d4b896;border-top-color:#8b4513;border-radius:50%;animation:spin .8s linear infinite}
+          @keyframes spin{to{transform:rotate(360deg)}}
           </style>
           </head>
           <body>
-          <div class="app">
-            <div class="sidebar">
-              <h2>📝 选一个字</h2>
-              <div class="char-grid" id="charGrid"></div>
+
+          <div class="spinner-overlay" id="spinner"><div class="spinner"></div></div>
+
+          <!-- SCREEN 1: Character Picker -->
+          <div class="screen-picker" id="screenPicker">
+            <div class="picker-header">
+              <h1>✍️ 汉字描红</h1>
+              <p>选一个字，开始练习</p>
             </div>
-            <div class="main">
-              <div class="char-display">
-                <div class="grid-bg"></div>
-                <div class="grid-diag1"></div>
-                <div class="grid-diag2"></div>
-                <div class="grid-border"></div>
-                <div id="target"></div>
-              </div>
-              <div class="info-bar">
-                <span id="currentChar" style="font-size:28px">一</span>
-                <span class="pinyin" id="pinyin"></span>
-              </div>
-              <div class="feedback" id="feedback"></div>
-              <div class="controls">
-                <button class="btn btn-outline" onclick="showAnimation()">🎬 看笔顺</button>
-                <button class="btn btn-primary" onclick="startQuiz()">✏️ 描红</button>
-                <button class="btn btn-success" onclick="nextChar()">➡️ 下一个</button>
-              </div>
-              <div class="stroke-hint" id="hint">跟着轮廓一笔一笔描</div>
+            <div class="picker-scroll">
+              <div class="category-title">基础笔画</div>
+              <div class="char-grid" id="gridBasic"></div>
+              <div class="category-title">常用汉字</div>
+              <div class="char-grid" id="gridCommon"></div>
+              <div class="category-title">自然天地</div>
+              <div class="char-grid" id="gridNature"></div>
+              <div class="category-title">身体动作</div>
+              <div class="char-grid" id="gridBody"></div>
+              <div class="category-title">动物植物</div>
+              <div class="char-grid" id="gridAnimal"></div>
+            </div>
+          </div>
+
+          <!-- SCREEN 2: Tracing -->
+          <div class="screen-trace" id="screenTrace">
+            <div class="trace-top">
+              <button class="back-btn" onclick="goBack()">← 选字</button>
+              <span class="trace-char-info"><span id="traceChar">一</span><span class="py" id="tracePy"></span></span>
+              <span class="stroke-counter" id="strokeCounter"></span>
+            </div>
+            <div class="canvas-wrap">
+              <div class="grid-layer"></div>
+              <div class="grid-x1"></div>
+              <div class="grid-x2"></div>
+              <div class="grid-border"></div>
+              <div id="writer-target"></div>
+            </div>
+            <div class="trace-msg" id="traceMsg"></div>
+            <div class="trace-buttons">
+              <button class="btn btn-outline" onclick="showAnimation()">🎬 看笔顺</button>
+              <button class="btn btn-primary" onclick="startQuiz()">✏️ 开始描红</button>
+              <button class="btn btn-clear" onclick="clearDrawing()">🔄 清除</button>
+            </div>
+          </div>
+
+          <!-- FIREWORKS OVERLAY -->
+          <div class="fireworks-overlay" id="fireworks">
+            <div class="fireworks-text">🎉 真棒！</div>
+            <div class="fireworks-sub" id="fwCharName"></div>
+            <div class="fw-buttons">
+              <button class="fw-btn fw-btn-retry" onclick="retryChar()">🔄 再写一遍</button>
+              <button class="fw-btn fw-btn-next" onclick="nextChar()">➡️ 下一个字</button>
             </div>
           </div>
 
           <script>
-          // ---- Word list for kids (Grade 1 common chars) ----
           var WORDS = [
-            {char:'一',py:'yī'},{char:'二',py:'èr'},{char:'三',py:'sān'},{char:'四',py:'sì'},
-            {char:'五',py:'wǔ'},{char:'六',py:'liù'},{char:'七',py:'qī'},{char:'八',py:'bā'},
-            {char:'九',py:'jiǔ'},{char:'十',py:'shí'},{char:'人',py:'rén'},{char:'大',py:'dà'},
-            {char:'天',py:'tiān'},{char:'日',py:'rì'},{char:'月',py:'yuè'},{char:'水',py:'shuǐ'},
-            {char:'火',py:'huǒ'},{char:'山',py:'shān'},{char:'石',py:'shí'},{char:'田',py:'tián'},
-            {char:'土',py:'tǔ'},{char:'木',py:'mù'},{char:'禾',py:'hé'},{char:'口',py:'kǒu'},
-            {char:'目',py:'mù'},{char:'耳',py:'ěr'},{char:'手',py:'shǒu'},{char:'上',py:'shàng'},
-            {char:'下',py:'xià'},{char:'左',py:'zuǒ'},{char:'右',py:'yòu'},{char:'中',py:'zhōng'},
-            {char:'大',py:'dà'},{char:'小',py:'xiǎo'},{char:'多',py:'duō'},{char:'少',py:'shǎo'},
-            {char:'白',py:'bái'},{char:'云',py:'yún'},{char:'风',py:'fēng'},{char:'雨',py:'yǔ'},
-            {char:'花',py:'huā'},{char:'草',py:'cǎo'},{char:'虫',py:'chóng'},{char:'鸟',py:'niǎo'},
-            {char:'鱼',py:'yú'},{char:'马',py:'mǎ'},{char:'牛',py:'niú'},{char:'羊',py:'yáng'}
+            {c:'一',py:'yī',cat:'basic'},{c:'二',py:'èr',cat:'basic'},{c:'三',py:'sān',cat:'basic'},
+            {c:'四',py:'sì',cat:'basic'},{c:'五',py:'wǔ',cat:'basic'},{c:'六',py:'liù',cat:'basic'},
+            {c:'七',py:'qī',cat:'basic'},{c:'八',py:'bā',cat:'basic'},{c:'九',py:'jiǔ',cat:'basic'},{c:'十',py:'shí',cat:'basic'},
+            {c:'人',py:'rén',cat:'common'},{c:'大',py:'dà',cat:'common'},{c:'天',py:'tiān',cat:'common'},
+            {c:'上',py:'shàng',cat:'common'},{c:'下',py:'xià',cat:'common'},{c:'中',py:'zhōng',cat:'common'},
+            {c:'左',py:'zuǒ',cat:'common'},{c:'右',py:'yòu',cat:'common'},{c:'小',py:'xiǎo',cat:'common'},
+            {c:'多',py:'duō',cat:'common'},{c:'少',py:'shǎo',cat:'common'},{c:'白',py:'bái',cat:'common'},
+            {c:'日',py:'rì',cat:'nature'},{c:'月',py:'yuè',cat:'nature'},{c:'水',py:'shuǐ',cat:'nature'},
+            {c:'火',py:'huǒ',cat:'nature'},{c:'山',py:'shān',cat:'nature'},{c:'石',py:'shí',cat:'nature'},
+            {c:'田',py:'tián',cat:'nature'},{c:'土',py:'tǔ',cat:'nature'},{c:'云',py:'yún',cat:'nature'},
+            {c:'风',py:'fēng',cat:'nature'},{c:'雨',py:'yǔ',cat:'nature'},
+            {c:'口',py:'kǒu',cat:'body'},{c:'目',py:'mù',cat:'body'},{c:'耳',py:'ěr',cat:'body'},
+            {c:'手',py:'shǒu',cat:'body'},{c:'足',py:'zú',cat:'body'},{c:'心',py:'xīn',cat:'body'},
+            {c:'子',py:'zǐ',cat:'body'},{c:'女',py:'nǚ',cat:'body'},{c:'父',py:'fù',cat:'body'},
+            {c:'花',py:'huā',cat:'animal'},{c:'草',py:'cǎo',cat:'animal'},{c:'木',py:'mù',cat:'animal'},
+            {c:'虫',py:'chóng',cat:'animal'},{c:'鸟',py:'niǎo',cat:'animal'},{c:'鱼',py:'yú',cat:'animal'},
+            {c:'马',py:'mǎ',cat:'animal'},{c:'牛',py:'niú',cat:'animal'},{c:'羊',py:'yáng',cat:'animal'}
           ];
 
-          var currentIdx = 0;
+          var currentWord = null;
           var writer = null;
-          var isQuizActive = false;
+          var quizActive = false;
 
-          function buildCharGrid() {
-            var g = document.getElementById('charGrid');
-            WORDS.forEach(function(w, i) {
-              var btn = document.createElement('button');
-              btn.className = 'char-btn';
-              btn.textContent = w.char;
-              btn.onclick = function(){ selectChar(i); };
-              g.appendChild(btn);
-            });
-          }
+          // ---- Build character picker ----
+          var cats = {
+            basic: document.getElementById('gridBasic'),
+            common: document.getElementById('gridCommon'),
+            nature: document.getElementById('gridNature'),
+            body: document.getElementById('gridBody'),
+            animal: document.getElementById('gridAnimal')
+          };
 
-          function selectChar(idx) {
-            currentIdx = idx;
-            var w = WORDS[idx];
-            document.getElementById('currentChar').textContent = w.char;
-            document.getElementById('pinyin').textContent = w.py;
-            document.getElementById('feedback').textContent = '';
-            document.getElementById('hint').textContent = '跟着轮廓一笔一笔描';
-            // highlight active
-            var btns = document.querySelectorAll('.char-btn');
-            btns.forEach(function(b,i){ b.classList.toggle('active', i===idx); });
-            resetWriter();
-          }
+          WORDS.forEach(function(w) {
+            var btn = document.createElement('button');
+            btn.className = 'char-card';
+            btn.textContent = w.c;
+            btn.onclick = function() { pickChar(w); };
+            cats[w.cat].appendChild(btn);
+          });
 
-          function resetWriter() {
-            if (writer) {
-              try { writer.hideCharacter(); } catch(e){}
-              writer = null;
-            }
-            isQuizActive = false;
-            document.getElementById('target').innerHTML = '';
-            var w = WORDS[currentIdx];
-            writer = HanziWriter.create('target', w.char, {
-              width: 300, height: 300, padding: 20,
-              strokeColor: '#2c1810',
-              radicalColor: '#8b4513',
-              outlineColor: '#d4a574',
-              highlightColor: 'rgba(139,69,19,.25)',
+          function pickChar(w) {
+            currentWord = w;
+            quizActive = false;
+
+            // Slide away picker
+            document.getElementById('screenPicker').classList.add('hidden');
+            document.getElementById('screenTrace').classList.add('active');
+
+            // Setup trace screen
+            document.getElementById('traceChar').textContent = w.c;
+            document.getElementById('tracePy').textContent = w.py;
+            document.getElementById('traceMsg').textContent = '';
+            document.getElementById('strokeCounter').textContent = '';
+            document.getElementById('writer-target').innerHTML = '';
+
+            // Show spinner while loading
+            var spinner = document.getElementById('spinner');
+            spinner.classList.add('show');
+            setTimeout(function() { spinner.classList.remove('show'); }, 4000);
+
+            // Create writer (data loads async from CDN)
+            writer = HanziWriter.create('writer-target', w.c, {
+              width: 400, height: 400, padding: 25,
+              strokeColor: 'rgba(44,24,16,.3)',
+              outlineColor: 'rgba(139,69,19,.45)',
+              highlightColor: 'rgba(139,69,19,.15)',
               drawingColor: '#c0392b',
-              drawingWidth: 6,
+              drawingWidth: 7,
               showCharacter: true,
               showHintAfterMisses: 2,
-              leniency: 1.2,
+              leniency: 1.3,
               acceptBackwardsStrokes: true,
-              markStrokeCorrectAfterMisses: 4,
-              highlightOnComplete: true
+              markStrokeCorrectAfterMisses: 5,
+              highlightOnComplete: true,
+              onLoadCharDataSuccess: function() {
+                spinner.classList.remove('show');
+                document.getElementById('traceMsg').textContent = '点击「开始描红」或「看笔顺」';
+              },
+              onLoadCharDataError: function(err) {
+                spinner.classList.remove('show');
+                document.getElementById('traceMsg').textContent = '加载失败，请检查网络';
+              }
             });
           }
 
           function showAnimation() {
-            if (isQuizActive) { resetWriter(); }
+            if (!writer) return;
+            quizActive = false;
+            document.getElementById('traceMsg').textContent = '🎬 注意看笔顺...';
             writer.animateCharacter({
               onComplete: function() {
-                document.getElementById('hint').textContent = '笔顺演示完成，点击「描红」开始练习';
+                document.getElementById('traceMsg').textContent = '笔顺演示完毕，点击「开始描红」';
               }
             });
-            document.getElementById('feedback').textContent = '🎬';
           }
 
           function startQuiz() {
-            if (writer) { resetWriter(); }
-            isQuizActive = true;
-            document.getElementById('feedback').textContent = '';
-            document.getElementById('hint').textContent = '用手指跟着描 ✍️';
+            if (!writer) return;
+            quizActive = true;
+            document.getElementById('traceMsg').textContent = '跟着描 ✍️';
+            document.getElementById('strokeCounter').textContent = '';
             writer.quiz({
               onCorrectStroke: function(data) {
-                var total = data.strokeNum;
-                document.getElementById('feedback').textContent = '✅ 第'+total+'笔';
+                document.getElementById('traceMsg').textContent = '✅ 好！';
+                document.getElementById('strokeCounter').textContent =
+                  '第 ' + data.strokeNum + ' / ' + data.totalStrokes + ' 笔';
               },
               onMistake: function(data) {
-                document.getElementById('feedback').textContent = '🔄 再试一次';
+                document.getElementById('traceMsg').textContent = '🔄 再描一次';
               },
               onComplete: function(data) {
-                document.getElementById('feedback').textContent = '🎉 写对了！真棒！';
-                document.getElementById('hint').textContent = '太厉害了！点击「下一个」继续';
+                quizActive = false;
+                document.getElementById('traceMsg').textContent = '';
+                showFireworks();
               }
             });
           }
 
-          function nextChar() {
-            selectChar((currentIdx + 1) % WORDS.length);
-            resetWriter();
+          function clearDrawing() {
+            if (!writer) return;
+            writer.hideCharacter();
+            setTimeout(function() {
+              writer = HanziWriter.create('writer-target', currentWord.c, {
+                width: 400, height: 400, padding: 25,
+                strokeColor: 'rgba(44,24,16,.3)',
+                outlineColor: 'rgba(139,69,19,.45)',
+                highlightColor: 'rgba(139,69,19,.15)',
+                drawingColor: '#c0392b',
+                drawingWidth: 7,
+                showCharacter: true,
+                showHintAfterMisses: 2,
+                leniency: 1.3,
+                acceptBackwardsStrokes: true,
+                markStrokeCorrectAfterMisses: 5,
+                highlightOnComplete: true
+              });
+              document.getElementById('traceMsg').textContent = '已清除，重新开始';
+            }, 200);
           }
 
-          buildCharGrid();
-          selectChar(0);
+          function showFireworks() {
+            var fw = document.getElementById('fireworks');
+            document.getElementById('fwCharName').textContent = '「' + currentWord.c + '」写好了！';
+            fw.classList.add('show');
+
+            // Spawn particles
+            for (var i = 0; i < 50; i++) {
+              var p = document.createElement('div');
+              p.className = 'particle';
+              var colors = ['#ff6b6b','#ffd93d','#6bcb77','#4d96ff','#ff922b','#e64980','#20c997','#ffd43b'];
+              p.style.cssText =
+                'left:'+(30+Math.random()*40)+'%;top:'+(30+Math.random()*40)+'%;'+
+                'width:'+(6+Math.random()*10)+'px;height:'+(6+Math.random()*10)+'px;'+
+                'background:'+colors[Math.floor(Math.random()*colors.length)]+';'+
+                '--x:'+((Math.random()-.5)*300)+'px;--y:'+((Math.random()-.5)*300)+'px';
+              document.body.appendChild(p);
+              setTimeout(function() { p.remove(); }, 1000);
+            }
+          }
+
+          function hideFireworks() {
+            document.getElementById('fireworks').classList.remove('show');
+          }
+
+          function retryChar() {
+            hideFireworks();
+            clearDrawing();
+            setTimeout(function() { startQuiz(); }, 500);
+          }
+
+          function nextChar() {
+            hideFireworks();
+            var idx = WORDS.indexOf(currentWord);
+            var next = WORDS[(idx + 1) % WORDS.length];
+            pickChar(next);
+            setTimeout(function() { startQuiz(); }, 800);
+          }
+
+          function goBack() {
+            quizActive = false;
+            if (writer) { writer.hideCharacter(); writer = null; }
+            document.getElementById('screenTrace').classList.remove('active');
+            document.getElementById('screenPicker').classList.remove('hidden');
+            document.getElementById('writer-target').innerHTML = '';
+          }
           </script>
           </body>
           </html>
@@ -283,7 +434,7 @@ jobs:
               compileSdk 33
               defaultConfig {
                   applicationId "com.happyzh.hanzi"
-                  minSdk 21; targetSdk 33; versionCode 1; versionName "1.0"
+                  minSdk 21; targetSdk 33; versionCode 2; versionName "1.1"
               }
               buildTypes { debug { minifyEnabled false } }
           }
