@@ -363,7 +363,26 @@ jobs:
             document.getElementById('strokeCounter').textContent = '';
           }
 
+          function playVictorySound() {
+            try {
+              var ctx = new (window.AudioContext || window.webkitAudioContext)();
+              var notes = [523, 659, 784, 1047];
+              notes.forEach(function(freq, i) {
+                var osc = ctx.createOscillator();
+                var gain = ctx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.value = freq;
+                gain.gain.setValueAtTime(0.3, ctx.currentTime + i * 0.15);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + i * 0.15 + 0.4);
+                osc.connect(gain); gain.connect(ctx.destination);
+                osc.start(ctx.currentTime + i * 0.15);
+                osc.stop(ctx.currentTime + i * 0.15 + 0.4);
+              });
+            } catch(e) {}
+          }
+
           function showFireworks() {
+            playVictorySound();
             var fw = document.getElementById('fireworks');
             document.getElementById('fwCharName').textContent = '「' + currentWord.c + '」写好了！';
             fw.classList.add('show');
