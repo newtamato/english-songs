@@ -1,6 +1,8 @@
 name: Build Kids APK Skeleton
 
 on:
+  push:
+    paths: ['build-kids/**', '.github/workflows/build-kids.yml']
   workflow_dispatch:
 
 jobs:
