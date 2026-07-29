@@ -61,7 +61,7 @@ body{background:#0a0a1a;font-family:'PingFang SC','Microsoft YaHei',sans-serif}
     <div class="cat-card songs" onclick="showList('songs')">
       <div class="emoji">🎵</div>
       <div class="name">英语儿歌</div>
-      <div class="count">20 首</div>
+      <div class="count">8 首</div>
     </div>
     <div class="cat-card books" onclick="showList('books')">
       <div class="emoji">📖</div>
@@ -96,15 +96,13 @@ var VIDEO_LIST = [];
 var currentIndex = 0;
 var currentCat = '';
 
+var BASE = 'https://englishasset.oss-cn-hangzhou.aliyuncs.com/';
+
 var SONGS = [
-  "1.Make A Circle","2.Seven Steps","3.One little finger","4.Clean Up Song",
-  "5.If You're Happy","6.Days of the Week","7.I See Something Blue",
   "8.Head Shoulders Knees And Toes(Let's Learn)",
-  "9.Head Shoulders Knees And Toes(Animals Speeding Up)",
-  "10.Head Shoulders Knees And Toes(Let's Sing)","11.Ten In The Bed",
-  "12.The Bath Song","13.Five Little Monkeys","14.The Alphabet Song",
-  "15.Alphabet Song (Uppercase)","16.I See Something Pink",
-  "17.Put On Your Shoes","18.Sweet Dreams","19.Hello","20.Count And Move"
+  "10.Head Shoulders Knees And Toes(Let's Sing)",
+  "11.Ten In The Bed","12.The Bath Song","13.Five Little Monkeys",
+  "14.The Alphabet Song","15.Alphabet Song (Uppercase)","20.Count And Move"
 ];
 
 var BOOKS = [
@@ -141,8 +139,8 @@ function showList(cat) {
   hideAll();
   currentCat = cat;
   var list = cat === 'songs' ? SONGS : BOOKS;
-  var prefix = cat === 'songs' ? 'songs/' : 'books/';
-  VIDEO_LIST = list.map(function(name) { return prefix + name + '.mp4'; });
+  var prefix = cat === 'songs' ? '' : 'AA级/';
+  VIDEO_LIST = list.map(function(name) { return BASE + encodeURI(prefix + name + '.mp4'); });
 
   document.getElementById('listTitle').textContent = cat === 'songs' ? '🎵 英语儿歌' : '📖 英语绘本';
   document.getElementById('listCount').textContent = VIDEO_LIST.length + ' 集';
