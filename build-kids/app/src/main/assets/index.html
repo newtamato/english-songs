@@ -132,6 +132,7 @@ var BOOKS = [
 function showCat() {
   hideAll();
   document.getElementById('screenCat').classList.add('active');
+  try { Android.requestPortrait(); } catch(e) {}
   stopPlay();
 }
 
@@ -163,6 +164,7 @@ function playVideo(index) {
   currentIndex = index;
   hideAll();
   document.getElementById('screenPlayer').classList.add('active');
+  try { Android.requestLandscape(); } catch(e) {}
 
   var video = document.getElementById('video');
   var name = VIDEO_LIST[index].split('/').pop().replace('.mp4','');
@@ -194,6 +196,7 @@ function stopPlay() {
   var video = document.getElementById('video');
   video.pause();
   video.src = '';
+  try { Android.requestPortrait(); } catch(e) {}
   showList(currentCat);
 }
 

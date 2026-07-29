@@ -3,6 +3,7 @@ import android.app.Activity;
 import android.os.Bundle;
 import android.view.*;
 import android.webkit.*;
+import android.content.pm.ActivityInfo;
 public class MainActivity extends Activity {
     private WebView wv;
     @Override protected void onCreate(Bundle s) {
@@ -25,5 +26,18 @@ public class MainActivity extends Activity {
         wv.setWebChromeClient(new WebChromeClient());
         wv.loadUrl("file:///android_asset/index.html");
         setContentView(wv);
+        wv.addJavascriptInterface(this, "Android");
+    }
+    @android.webkit.JavascriptInterface
+    public void requestLandscape() {
+        runOnUiThread(new Runnable() {
+            @Override public void run() { setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE); }
+        });
+    }
+    @android.webkit.JavascriptInterface
+    public void requestPortrait() {
+        runOnUiThread(new Runnable() {
+            @Override public void run() { setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT); }
+        });
     }
 }
