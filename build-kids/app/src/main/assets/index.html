@@ -32,12 +32,17 @@ body{background:#0a0a1a;font-family:'PingFang SC','Microsoft YaHei',sans-serif}
 .list-title{font-size:20px;font-weight:700;color:#fff;flex:1}
 .list-count{font-size:13px;color:#888}
 .list-scroll{flex:1;overflow-y:auto;padding:12px;-webkit-overflow-scrolling:touch}
-.video-item{display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:14px;cursor:pointer;margin-bottom:6px;transition:background .15s}
+.video-item{display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:14px;cursor:pointer;margin-bottom:6px;transition:background .15s}
 .video-item:nth-child(odd){background:#16213e}
 .video-item:nth-child(even){background:#0f3460}
 .video-item:active{background:#533483}
 .video-item .num{width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#e94560;flex-shrink:0}
-.video-item .vname{font-size:16px;color:#eee;line-height:1.4;word-break:break-word}
+.video-item .vname{font-size:16px;color:#eee;line-height:1.4;word-break:break-word;flex:1}
+.dl-btn{width:36px;height:36px;border-radius:50%;border:none;font-size:18px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .2s}
+.dl-btn.none{background:rgba(255,255,255,.12);color:#888}
+.dl-btn.downloading{background:rgba(77,150,255,.3);color:#4d96ff}
+.dl-btn.done{background:rgba(107,203,119,.3);color:#6bcb77}
+.dl-btn.error{background:rgba(233,69,96,.3);color:#e94560}
 
 /* ===== PLAYER SCREEN ====== */
 .player-screen{background:#000}
@@ -93,8 +98,10 @@ body{background:#0a0a1a;font-family:'PingFang SC','Microsoft YaHei',sans-serif}
 
 <script>
 var VIDEO_LIST = [];
+var VIDEO_NAMES = [];
 var currentIndex = 0;
 var currentCat = '';
+var dlPollTimer = null;
 
 var BASE = 'https://englishasset.oss-cn-hangzhou.aliyuncs.com/';
 
@@ -129,6 +136,54 @@ var BOOKS = [
   "AA-93Under","AA-94On","AA-95In","AA-96Out","AA-97Off","AA-98Over","AA-99The Market"
 ];
 
+function dlIcon(state, progress) {
+  if (state === 'done') return '✓';
+  if (state === 'error') return '⚠';
+  if (state === 'downloading') return (progress || 0) + '%';
+  return '↓';
+}
+
+function dlClass(state) {
+  if (state === 'done') return 'done';
+  if (state === 'error') return 'error';
+  if (state === 'downloading') return 'downloading';
+  return 'none';
+}
+
+function refreshDownloadStates() {
+  if (!VIDEO_NAMES.length) return;
+  var anyDownloading = false;
+  VIDEO_NAMES.forEach(function(name, i) {
+    var btn = document.getElementById('dl-' + i);
+    if (!btn) return;
+    var stateJson;
+    try { stateJson = Android.getDownloadState(encodeURIComponent(name)); } catch(e) { return; }
+    var state = JSON.parse(stateJson);
+    btn.className = 'dl-btn ' + dlClass(state.state);
+    btn.textContent = dlIcon(state.state, state.progress);
+    if (state.state === 'downloading') anyDownloading = true;
+  });
+  if (anyDownloading) {
+    if (!dlPollTimer) dlPollTimer = setInterval(refreshDownloadStates, 800);
+  } else {
+    if (dlPollTimer) { clearInterval(dlPollTimer); dlPollTimer = null; }
+  }
+}
+
+function toggleDownload(i) {
+  var name = VIDEO_NAMES[i];
+  var url = VIDEO_LIST[i];
+  try {
+    var state = JSON.parse(Android.getDownloadState(encodeURIComponent(name)));
+    if (state.state === 'done') return;
+    if (state.state === 'downloading') return;
+    if (state.state === 'none' || state.state === 'error') {
+      Android.downloadVideo(url, encodeURIComponent(name));
+      refreshDownloadStates();
+    }
+  } catch(e) {}
+}
+
 function showCat() {
   hideAll();
   document.getElementById('screenCat').classList.add('active');
@@ -142,6 +197,7 @@ function showList(cat) {
   var list = cat === 'songs' ? SONGS : BOOKS;
   var prefix = cat === 'songs' ? '' : 'AA级/';
   VIDEO_LIST = list.map(function(name) { return BASE + encodeURI(prefix + name + '.mp4'); });
+  VIDEO_NAMES = list.map(function(name) { return prefix + name; });
 
   document.getElementById('listTitle').textContent = cat === 'songs' ? '🎵 英语儿歌' : '📖 英语绘本';
   document.getElementById('listCount').textContent = VIDEO_LIST.length + ' 集';
@@ -149,15 +205,21 @@ function showList(cat) {
   var scroll = document.getElementById('listScroll');
   scroll.innerHTML = '';
   VIDEO_LIST.forEach(function(path, i) {
-    var name = path.split('/').pop().replace('.mp4','');
+    var name = VIDEO_NAMES[i];
     var div = document.createElement('div');
     div.className = 'video-item';
+    div.innerHTML =
+      '<div class="num">'+(i+1)+'</div>' +
+      '<div class="vname">'+name+'</div>' +
+      '<button class="dl-btn none" id="dl-'+i+'" onclick="event.stopPropagation();toggleDownload('+i+')">↓</button>';
     div.onclick = function() { playVideo(i); };
-    div.innerHTML = '<div class="num">'+(i+1)+'</div><div class="vname">'+name+'</div>';
     scroll.appendChild(div);
   });
 
   document.getElementById('screenList').classList.add('active');
+
+  // Check download states after rendering
+  setTimeout(refreshDownloadStates, 100);
 }
 
 function playVideo(index) {
@@ -167,10 +229,13 @@ function playVideo(index) {
   try { Android.requestLandscape(); } catch(e) {}
 
   var video = document.getElementById('video');
-  var name = VIDEO_LIST[index].split('/').pop().replace('.mp4','');
+  var name = VIDEO_NAMES[index];
   document.getElementById('playerTitle').textContent = (index+1)+'. '+name;
 
-  video.src = VIDEO_LIST[index];
+  // Check local file first
+  var localUrl = '';
+  try { localUrl = Android.isDownloaded(encodeURIComponent(name)); } catch(e) {}
+  video.src = localUrl || VIDEO_LIST[index];
   video.load();
   video.play().catch(function(){});
 
