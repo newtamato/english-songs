@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>快乐数学</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden;touch-action:manipulation;-webkit-user-select:none;user-select:none}
+body{background:linear-gradient(180deg,#ffecd2 0%,#fcb69f 50%,#ff9a9e 100%);font-family:'PingFang SC','Microsoft YaHei',sans-serif;display:flex;align-items:center;justify-content:center}
+
+/* ===== SCREENS ===== */
+.screen{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;z-index:10}
+.screen.active{display:flex}
+
+/* ===== HOME ===== */
+.home-title{font-size:48px;font-weight:900;color:#fff;text-shadow:3px 3px 0 #e88,6px 6px 0 rgba(0,0,0,.08);margin-bottom:8px}
+.home-sub{font-size:20px;color:#fff;margin-bottom:48px;opacity:.9}
+.mode-cards{display:flex;gap:28px;flex-wrap:wrap;justify-content:center;padding:0 20px}
+.mode-card{width:260px;padding:44px 28px;border-radius:32px;cursor:pointer;text-align:center;transition:transform .15s;box-shadow:0 8px 32px rgba(0,0,0,.12)}
+.mode-card:active{transform:scale(.93)}
+.mode-card.easy{background:linear-gradient(135deg,#a8e6cf,#88d8b0)}
+.mode-card.hard{background:linear-gradient(135deg,#ffd3b6,#ffaaa5)}
+.mode-card .emoji{font-size:64px;margin-bottom:12px}
+.mode-card .name{font-size:28px;font-weight:800;color:#fff;text-shadow:2px 2px 0 rgba(0,0,0,.08)}
+.mode-card .desc{font-size:16px;color:rgba(255,255,255,.8);margin-top:8px}
+
+/* ===== GAME ===== */
+.game-top{position:absolute;top:0;left:0;right:0;display:flex;align-items:center;justify-content:space-between;padding:16px 20px;background:rgba(255,255,255,.25);backdrop-filter:blur(10px);z-index:5}
+.game-info{display:flex;align-items:center;gap:16px}
+.game-info .badge{background:rgba(255,255,255,.5);padding:8px 16px;border-radius:20px;font-size:15px;font-weight:700;color:#555}
+.game-info .badge.score{background:#ffd93d;color:#8b6914}
+.timer{font-size:26px;font-weight:900;color:#555;font-variant-numeric:tabular-nums}
+.quit-btn{background:rgba(255,255,255,.5);border:none;padding:10px 18px;border-radius:16px;font-size:15px;font-weight:700;color:#888;cursor:pointer}
+
+.problem-area{display:flex;flex-direction:column;align-items:center;gap:20px;margin-top:40px}
+.problem-label{font-size:22px;color:rgba(0,0,0,.35);font-weight:700}
+.equation{display:flex;align-items:center;gap:20px}
+.num-box{width:100px;height:100px;border-radius:30px;display:flex;align-items:center;justify-content:center;font-size:52px;font-weight:900;color:#fff;text-shadow:2px 2px 0 rgba(0,0,0,.12);box-shadow:0 6px 20px rgba(0,0,0,.1)}
+.num-box.c1{background:linear-gradient(135deg,#ff6b6b,#ee5a24)}
+.num-box.c2{background:linear-gradient(135deg,#48dbfb,#0abde3)}
+.num-box.c3{background:linear-gradient(135deg,#feca57,#ff9f43)}
+.num-box.c4{background:linear-gradient(135deg,#ff9ff3,#f368e0)}
+.op{font-size:44px;font-weight:900;color:#fff;text-shadow:2px 2px 0 rgba(0,0,0,.1)}
+.eq{font-size:44px;font-weight:900;color:#fff;text-shadow:2px 2px 0 rgba(0,0,0,.1)}
+.qmark{font-size:56px;line-height:1}
+
+.answers{display:flex;gap:32px;margin-top:32px}
+.ans-btn{width:150px;height:150px;border-radius:40px;border:none;font-size:56px;font-weight:900;color:#fff;text-shadow:2px 2px 0 rgba(0,0,0,.1);cursor:pointer;transition:transform .15s,box-shadow .15s;box-shadow:0 8px 28px rgba(0,0,0,.12)}
+.ans-btn:active{transform:scale(.9)}
+.ans-btn.a1{background:linear-gradient(135deg,#6c5ce7,#a29bfe)}
+.ans-btn.a2{background:linear-gradient(135deg,#00b894,#55efc4)}
+
+/* ===== FEEDBACK ===== */
+.feedback-overlay{position:fixed;inset:0;z-index:50;display:none;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,.45);animation:fadeIn .2s}
+.feedback-overlay.show{display:flex}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.feedback-emoji{font-size:100px;animation:bounceIn .4s ease-out}
+@keyframes bounceIn{0%{transform:scale(0);opacity:0}60%{transform:scale(1.3)}100%{transform:scale(1);opacity:1}}
+.feedback-text{font-size:32px;font-weight:900;color:#fff;margin-top:8px;text-shadow:2px 2px 0 rgba(0,0,0,.2)}
+.feedback-score{font-size:20px;color:#ffd93d;margin-top:4px}
+
+/* ===== END SCREEN ===== */
+.end-screen{background:linear-gradient(180deg,#2d1b69,#1a0a3e)}
+.end-screen .end-emoji{font-size:100px;animation:bounceIn .5s}
+.end-screen .end-title{font-size:42px;font-weight:900;color:#ffd93d;margin-top:12px;text-shadow:3px 3px 0 rgba(0,0,0,.3)}
+.end-screen .end-stats{display:flex;gap:24px;margin:24px 0}
+.end-screen .stat-card{background:rgba(255,255,255,.12);border-radius:24px;padding:24px 32px;text-align:center;min-width:130px}
+.end-screen .stat-val{font-size:40px;font-weight:900;color:#fff}
+.end-screen .stat-label{font-size:15px;color:rgba(255,255,255,.6);margin-top:4px}
+.end-screen .restart-btn{background:linear-gradient(135deg,#ffd93d,#f9ca24);color:#2d1b69;border:none;padding:20px 48px;border-radius:28px;font-size:24px;font-weight:900;cursor:pointer;box-shadow:0 8px 28px rgba(255,217,61,.4);transition:transform .15s}
+.end-screen .restart-btn:active{transform:scale(.93)}
+
+/* ===== FIREWORKS ===== */
+.fireworks-overlay{position:fixed;inset:0;z-index:100;display:none;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,.75)}
+.fireworks-overlay.show{display:flex}
+.fireworks-text{font-size:48px;font-weight:900;color:#ffd700;text-shadow:0 0 30px rgba(255,215,0,.5);animation:pop .5s ease-out}
+@keyframes pop{0%{transform:scale(0);opacity:0}70%{transform:scale(1.2)}100%{transform:scale(1);opacity:1}}
+.fireworks-sub{font-size:20px;color:#fff;margin:16px 0 28px}
+.fw-buttons{display:flex;gap:20px}
+.fw-btn{padding:18px 36px;border-radius:20px;border:none;font-size:22px;font-weight:700;cursor:pointer;transition:transform .15s}
+.fw-btn:active{transform:scale(.93)}
+.fw-btn-restart{background:#ffd700;color:#2d1b69}
+.fw-btn-home{background:rgba(255,255,255,.15);color:#fff;border:2px solid rgba(255,255,255,.3)}
+
+.particle{position:fixed;pointer-events:none;z-index:101;border-radius:50%;animation:boom .9s ease-out forwards}
+@keyframes boom{0%{opacity:1;transform:translate(0,0) scale(1)}100%{opacity:0;transform:translate(var(--x),var(--y)) scale(0)}}
+
+/* ===== STARS BACKGROUND (end screen) ===== */
+.stars{position:fixed;inset:0;pointer-events:none;z-index:0}
+.star{position:absolute;background:#fff;border-radius:50%;animation:twinkle 2s ease-in-out infinite}
+@keyframes twinkle{0%,100%{opacity:.3;transform:scale(1)}50%{opacity:1;transform:scale(1.5)}}
+</style>
+</head>
+<body>
+
+<!-- HOME SCREEN -->
+<div class="screen active" id="screenHome">
+  <div class="home-title">🌈 快乐数学</div>
+  <div class="home-sub">选一个难度，开始挑战吧！</div>
+  <div class="mode-cards">
+    <div class="mode-card easy" onclick="startGame(5)">
+      <div class="emoji">🐣</div>
+      <div class="name">5 以内</div>
+      <div class="desc">加减法 · 30 题</div>
+    </div>
+    <div class="mode-card hard" onclick="startGame(10)">
+      <div class="emoji">🐥</div>
+      <div class="name">10 以内</div>
+      <div class="desc">加减法 · 30 题</div>
+    </div>
+  </div>
+</div>
+
+<!-- GAME SCREEN -->
+<div class="screen" id="screenGame">
+  <div class="game-top">
+    <button class="quit-btn" onclick="quitGame()">✕ 退出</button>
+    <div class="game-info">
+      <span class="badge" id="qCounter">1 / 30</span>
+      <span class="badge score" id="scoreBadge">⭐ 0</span>
+    </div>
+    <div class="timer" id="timer">00:00</div>
+  </div>
+  <div class="problem-area">
+    <div class="problem-label" id="problemLabel">第 1 题</div>
+    <div class="equation">
+      <div class="num-box c1" id="num1">3</div>
+      <div class="op" id="op">+</div>
+      <div class="num-box c2" id="num2">2</div>
+      <div class="eq">=</div>
+      <div class="num-box c3 qmark">?</div>
+    </div>
+    <div class="answers">
+      <button class="ans-btn a1" id="ansA" onclick="answer(0)">5</button>
+      <button class="ans-btn a2" id="ansB" onclick="answer(1)">1</button>
+    </div>
+  </div>
+</div>
+
+<!-- FEEDBACK OVERLAY -->
+<div class="feedback-overlay" id="feedback">
+  <div class="feedback-emoji" id="fbEmoji">😊</div>
+  <div class="feedback-text" id="fbText">太棒了！</div>
+  <div class="feedback-score" id="fbScore"></div>
+</div>
+
+<!-- FIREWORKS OVERLAY -->
+<div class="fireworks-overlay" id="fireworks">
+  <div class="stars" id="starsContainer"></div>
+  <div class="fireworks-text">🎉 挑战完成！</div>
+  <div class="fireworks-sub" id="fwSummary"></div>
+  <div class="fw-buttons">
+    <button class="fw-btn fw-btn-restart" onclick="restartSame()">🔄 再来一次</button>
+    <button class="fw-btn fw-btn-home" onclick="goHome()">🏠 返回首页</button>
+  </div>
+</div>
+
+<script>
+var TOTAL = 30;
+var maxNum = 5;
+var questions = [];
+var qIndex = 0;
+var score = 0;
+var timerSec = 0;
+var timerInterval = null;
+
+var ENCOURAGE = ['太棒了！','真厉害！','答对了！','好聪明！','完全正确！','你真行！','👍 棒棒！'];
+var EMOJIS = ['😊','🌟','🎈','💪','👏','🥳','✨'];
+
+function randomColor() { return ['c1','c2','c3','c4'][Math.floor(Math.random()*4)]; }
+
+function generateQuestions(max) {
+  var qs = [];
+  var seen = {};
+  while (qs.length < TOTAL) {
+    var isAdd = Math.random() < 0.5;
+    var a, b, ans;
+    if (isAdd) {
+      a = Math.floor(Math.random() * (max + 1));
+      b = Math.floor(Math.random() * (max + 1 - a));
+      ans = a + b;
+    } else {
+      a = Math.floor(Math.random() * (max + 1));
+      b = Math.floor(Math.random() * (a + 1));
+      ans = a - b;
+    }
+    var key = a + (isAdd ? '+' : '-') + b;
+    if (seen[key]) continue;
+    seen[key] = true;
+    qs.push({a:a, op:isAdd ? '+' : '-', b:b, ans:ans});
+  }
+  // shuffle
+  for (var i = qs.length - 1; i > 0; i--) {
+    var j = Math.floor(Math.random() * (i + 1));
+    var t = qs[i]; qs[i] = qs[j]; qs[j] = t;
+  }
+  return qs;
+}
+
+function generateWrong(ans, max) {
+  var w;
+  do { w = Math.floor(Math.random() * (max + max + 1)); } while (w === ans);
+  return w;
+}
+
+function renderQuestion() {
+  var q = questions[qIndex];
+  document.getElementById('problemLabel').textContent = '第 ' + (qIndex + 1) + ' 题';
+  document.getElementById('qCounter').textContent = (qIndex + 1) + ' / ' + TOTAL;
+
+  var n1 = document.getElementById('num1');
+  var n2 = document.getElementById('num2');
+  n1.textContent = q.a;
+  n2.textContent = q.b;
+  n1.className = 'num-box ' + randomColor();
+  n2.className = 'num-box ' + randomColor();
+  document.getElementById('op').textContent = q.op;
+
+  // 2 choices: correct + one wrong
+  var wrong = generateWrong(q.ans, maxNum);
+  var choices = [q.ans, wrong];
+  // shuffle
+  if (Math.random() < 0.5) choices = [wrong, q.ans];
+  document.getElementById('ansA').textContent = choices[0];
+  document.getElementById('ansB').textContent = choices[1];
+  // store whether A is correct
+  document.getElementById('ansA').dataset.correct = choices[0] === q.ans ? '1' : '0';
+  document.getElementById('ansB').dataset.correct = choices[1] === q.ans ? '1' : '0';
+}
+
+function answer(choice) {
+  var btn = choice === 0 ? document.getElementById('ansA') : document.getElementById('ansB');
+  var correct = btn.dataset.correct === '1';
+
+  if (correct) {
+    score++;
+    document.getElementById('scoreBadge').textContent = '⭐ ' + score;
+    playHappySound();
+    showFeedback(true);
+  } else {
+    playWrongSound();
+    showFeedback(false);
+  }
+}
+
+function showFeedback(correct) {
+  var fb = document.getElementById('feedback');
+  var emoji = document.getElementById('fbEmoji');
+  var text = document.getElementById('fbText');
+  var sc = document.getElementById('fbScore');
+
+  if (correct) {
+    emoji.textContent = EMOJIS[Math.floor(Math.random() * EMOJIS.length)];
+    text.textContent = ENCOURAGE[Math.floor(Math.random() * ENCOURAGE.length)];
+    sc.textContent = '得分：' + score;
+  } else {
+    emoji.textContent = '🤔';
+    text.textContent = '答案是 ' + questions[qIndex].ans;
+    sc.textContent = '加油哦～';
+  }
+
+  fb.classList.add('show');
+  setTimeout(function() {
+    fb.classList.remove('show');
+    nextQuestion();
+  }, 1200);
+}
+
+function nextQuestion() {
+  qIndex++;
+  if (qIndex >= TOTAL) {
+    endGame();
+    return;
+  }
+  renderQuestion();
+}
+
+function startGame(max) {
+  maxNum = max;
+  questions = generateQuestions(max);
+  qIndex = 0;
+  score = 0;
+  timerSec = 0;
+
+  document.getElementById('scoreBadge').textContent = '⭐ 0';
+  document.getElementById('timer').textContent = '00:00';
+
+  hideAll();
+  document.getElementById('screenGame').classList.add('active');
+  renderQuestion();
+  startTimer();
+}
+
+function startTimer() {
+  if (timerInterval) clearInterval(timerInterval);
+  timerInterval = setInterval(function() {
+    timerSec++;
+    var m = Math.floor(timerSec / 60);
+    var s = timerSec % 60;
+    document.getElementById('timer').textContent =
+      (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
+  }, 1000);
+}
+
+function quitGame() {
+  if (timerInterval) clearInterval(timerInterval);
+  hideAll();
+  document.getElementById('screenHome').classList.add('active');
+}
+
+function endGame() {
+  if (timerInterval) clearInterval(timerInterval);
+
+  var m = Math.floor(timerSec / 60);
+  var s = timerSec % 60;
+  var timeStr = (m > 0 ? m + '分' : '') + s + '秒';
+  document.getElementById('fwSummary').textContent =
+    '答对 ' + score + ' / ' + TOTAL + ' 题 · 用时 ' + timeStr;
+
+  playVictorySound();
+  showFireworks();
+}
+
+function showFireworks() {
+  document.getElementById('fireworks').classList.add('show');
+  spawnParticles();
+  createStars();
+}
+
+function spawnParticles() {
+  var colors = ['#ff6b6b','#ffd93d','#6bcb77','#4d96ff','#ff9ff3','#feca57','#48dbfb','#ff9a9e'];
+  for (var i = 0; i < 60; i++) {
+    var p = document.createElement('div');
+    p.className = 'particle';
+    var size = 6 + Math.random() * 12;
+    p.style.width = size + 'px';
+    p.style.height = size + 'px';
+    p.style.background = colors[Math.floor(Math.random() * colors.length)];
+    p.style.left = (20 + Math.random() * 60) + '%';
+    p.style.top = (30 + Math.random() * 40) + '%';
+    p.style.setProperty('--x', (Math.random() - 0.5) * 300 + 'px');
+    p.style.setProperty('--y', (Math.random() - 0.5) * 400 - 100 + 'px');
+    p.style.animationDelay = Math.random() * .3 + 's';
+    document.body.appendChild(p);
+    setTimeout(function() { p.remove(); }, 1200);
+  }
+}
+
+function createStars() {
+  var container = document.getElementById('starsContainer');
+  container.innerHTML = '';
+  for (var i = 0; i < 40; i++) {
+    var s = document.createElement('div');
+    s.className = 'star';
+    var size = 2 + Math.random() * 5;
+    s.style.width = size + 'px';
+    s.style.height = size + 'px';
+    s.style.left = Math.random() * 100 + '%';
+    s.style.top = Math.random() * 100 + '%';
+    s.style.animationDelay = Math.random() * 2 + 's';
+    s.style.animationDuration = (1.5 + Math.random() * 3) + 's';
+    container.appendChild(s);
+  }
+}
+
+function restartSame() {
+  document.getElementById('fireworks').classList.remove('show');
+  document.getElementById('starsContainer').innerHTML = '';
+  startGame(maxNum);
+}
+
+function goHome() {
+  document.getElementById('fireworks').classList.remove('show');
+  document.getElementById('starsContainer').innerHTML = '';
+  hideAll();
+  document.getElementById('screenHome').classList.add('active');
+}
+
+function hideAll() {
+  document.querySelectorAll('.screen,.fireworks-overlay').forEach(function(s) { s.classList.remove('show','active'); });
+}
+
+// ===== SOUND EFFECTS =====
+function playHappySound() {
+  try {
+    var ctx = new (window.AudioContext || window.webkitAudioContext)();
+    var notes = [523, 659, 784];
+    notes.forEach(function(freq, i) {
+      var osc = ctx.createOscillator();
+      var gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(.15, ctx.currentTime + i * .1);
+      gain.gain.exponentialRampToValueAtTime(.001, ctx.currentTime + i * .1 + .3);
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.start(ctx.currentTime + i * .1);
+      osc.stop(ctx.currentTime + i * .1 + .3);
+    });
+  } catch(e) {}
+}
+
+function playWrongSound() {
+  try {
+    var ctx = new (window.AudioContext || window.webkitAudioContext)();
+    var osc = ctx.createOscillator();
+    var gain = ctx.createGain();
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(200, ctx.currentTime);
+    osc.frequency.setValueAtTime(150, ctx.currentTime + .15);
+    gain.gain.setValueAtTime(.08, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(.001, ctx.currentTime + .3);
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start(); osc.stop(ctx.currentTime + .3);
+  } catch(e) {}
+}
+
+function playVictorySound() {
+  try {
+    var ctx = new (window.AudioContext || window.webkitAudioContext)();
+    var notes = [523, 659, 784, 1047];
+    notes.forEach(function(freq, i) {
+      var osc = ctx.createOscillator();
+      var gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(.2, ctx.currentTime + i * .15);
+      gain.gain.exponentialRampToValueAtTime(.001, ctx.currentTime + i * .15 + .5);
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.start(ctx.currentTime + i * .15);
+      osc.stop(ctx.currentTime + i * .15 + .5);
+    });
+  } catch(e) {}
+}
+</script>
+</body>
+</html>
