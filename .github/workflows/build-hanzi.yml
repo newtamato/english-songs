@@ -175,16 +175,22 @@ jobs:
               <p>选一个字，开始练习</p>
             </div>
             <div class="picker-scroll">
-              <div class="category-title">基础笔画</div>
-              <div class="char-grid" id="gridBasic"></div>
-              <div class="category-title">常用汉字</div>
-              <div class="char-grid" id="gridCommon"></div>
-              <div class="category-title">自然天地</div>
+              <div class="category-title">🔢 数字</div>
+              <div class="char-grid" id="gridNumbers"></div>
+              <div class="category-title">🌿 自然天地</div>
               <div class="char-grid" id="gridNature"></div>
-              <div class="category-title">身体动作</div>
+              <div class="category-title">✋ 身体</div>
               <div class="char-grid" id="gridBody"></div>
               <div class="category-title">动物植物</div>
               <div class="char-grid" id="gridAnimal"></div>
+              <div class="category-title">人物称呼</div>
+              <div class="char-grid" id="gridPeople"></div>
+              <div class="category-title">动作方向</div>
+              <div class="char-grid" id="gridActions"></div>
+              <div class="category-title">学习生活</div>
+              <div class="char-grid" id="gridSchool"></div>
+              <div class="category-title">📝 常用汉字</div>
+              <div class="char-grid" id="gridCommon"></div>
             </div>
           </div>
 
@@ -222,23 +228,140 @@ jobs:
 
           <script>
           var WORDS = [
-            {c:'一',py:'yī',cat:'basic'},{c:'二',py:'èr',cat:'basic'},{c:'三',py:'sān',cat:'basic'},
-            {c:'四',py:'sì',cat:'basic'},{c:'五',py:'wǔ',cat:'basic'},{c:'六',py:'liù',cat:'basic'},
-            {c:'七',py:'qī',cat:'basic'},{c:'八',py:'bā',cat:'basic'},{c:'九',py:'jiǔ',cat:'basic'},{c:'十',py:'shí',cat:'basic'},
-            {c:'人',py:'rén',cat:'common'},{c:'大',py:'dà',cat:'common'},{c:'天',py:'tiān',cat:'common'},
-            {c:'上',py:'shàng',cat:'common'},{c:'下',py:'xià',cat:'common'},{c:'中',py:'zhōng',cat:'common'},
-            {c:'左',py:'zuǒ',cat:'common'},{c:'右',py:'yòu',cat:'common'},{c:'小',py:'xiǎo',cat:'common'},
-            {c:'多',py:'duō',cat:'common'},{c:'少',py:'shǎo',cat:'common'},{c:'白',py:'bái',cat:'common'},
+            // ==== 数字 (numbers) ====
+            {c:'一',py:'yī',cat:'numbers'},{c:'二',py:'èr',cat:'numbers'},{c:'三',py:'sān',cat:'numbers'},
+            {c:'四',py:'sì',cat:'numbers'},{c:'五',py:'wǔ',cat:'numbers'},{c:'六',py:'liù',cat:'numbers'},
+            {c:'七',py:'qī',cat:'numbers'},{c:'八',py:'bā',cat:'numbers'},{c:'九',py:'jiǔ',cat:'numbers'},{c:'十',py:'shí',cat:'numbers'},
+            {c:'百',py:'bǎi',cat:'numbers'},{c:'千',py:'qiān',cat:'numbers'},{c:'万',py:'wàn',cat:'numbers'},
+            {c:'几',py:'jǐ',cat:'numbers'},{c:'半',py:'bàn',cat:'numbers'},{c:'双',py:'shuāng',cat:'numbers'},
+            {c:'只',py:'zhǐ',cat:'numbers'},{c:'个',py:'gè',cat:'numbers'},{c:'元',py:'yuán',cat:'numbers'},{c:'共',py:'gòng',cat:'numbers'},
+            // ==== 自然天地 (nature) ====
             {c:'日',py:'rì',cat:'nature'},{c:'月',py:'yuè',cat:'nature'},{c:'水',py:'shuǐ',cat:'nature'},
             {c:'火',py:'huǒ',cat:'nature'},{c:'山',py:'shān',cat:'nature'},{c:'石',py:'shí',cat:'nature'},
             {c:'田',py:'tián',cat:'nature'},{c:'土',py:'tǔ',cat:'nature'},{c:'云',py:'yún',cat:'nature'},
-            {c:'风',py:'fēng',cat:'nature'},{c:'雨',py:'yǔ',cat:'nature'},
+            {c:'风',py:'fēng',cat:'nature'},{c:'雨',py:'yǔ',cat:'nature'},{c:'雪',py:'xuě',cat:'nature'},
+            {c:'春',py:'chūn',cat:'nature'},{c:'冬',py:'dōng',cat:'nature'},{c:'秋',py:'qiū',cat:'nature'},
+            {c:'天',py:'tiān',cat:'nature'},{c:'地',py:'dì',cat:'nature'},{c:'星',py:'xīng',cat:'nature'},
+            {c:'光',py:'guāng',cat:'nature'},{c:'阳',py:'yáng',cat:'nature'},{c:'太',py:'tài',cat:'nature'},
+            {c:'气',py:'qì',cat:'nature'},{c:'空',py:'kōng',cat:'nature'},{c:'金',py:'jīn',cat:'nature'},
+            {c:'色',py:'sè',cat:'nature'},{c:'青',py:'qīng',cat:'nature'},
+            // ==== 身体 (body) ====
             {c:'口',py:'kǒu',cat:'body'},{c:'目',py:'mù',cat:'body'},{c:'耳',py:'ěr',cat:'body'},
             {c:'手',py:'shǒu',cat:'body'},{c:'足',py:'zú',cat:'body'},{c:'心',py:'xīn',cat:'body'},
-            {c:'子',py:'zǐ',cat:'body'},{c:'女',py:'nǚ',cat:'body'},{c:'父',py:'fù',cat:'body'},
+            {c:'头',py:'tóu',cat:'body'},{c:'身',py:'shēn',cat:'body'},{c:'体',py:'tǐ',cat:'body'},
+            {c:'舌',py:'shé',cat:'body'},{c:'牙',py:'yá',cat:'body'},{c:'面',py:'miàn',cat:'body'},
+            {c:'首',py:'shǒu',cat:'body'},
+            // ==== 动物植物 (animal) ====
             {c:'花',py:'huā',cat:'animal'},{c:'草',py:'cǎo',cat:'animal'},{c:'木',py:'mù',cat:'animal'},
+            {c:'林',py:'lín',cat:'animal'},{c:'树',py:'shù',cat:'animal'},{c:'竹',py:'zhú',cat:'animal'},{c:'禾',py:'hé',cat:'animal'},
+            {c:'叶',py:'yè',cat:'animal'},{c:'瓜',py:'guā',cat:'animal'},{c:'果',py:'guǒ',cat:'animal'},
+            {c:'豆',py:'dòu',cat:'animal'},{c:'米',py:'mǐ',cat:'animal'},{c:'朵',py:'duǒ',cat:'animal'},{c:'采',py:'cǎi',cat:'animal'},
             {c:'虫',py:'chóng',cat:'animal'},{c:'鸟',py:'niǎo',cat:'animal'},{c:'鱼',py:'yú',cat:'animal'},
-            {c:'马',py:'mǎ',cat:'animal'},{c:'牛',py:'niú',cat:'animal'},{c:'羊',py:'yáng',cat:'animal'}
+            {c:'马',py:'mǎ',cat:'animal'},{c:'牛',py:'niú',cat:'animal'},{c:'羊',py:'yáng',cat:'animal'},{c:'象',py:'xiàng',cat:'animal'},
+            // ==== 人物称呼 (people) ====
+            {c:'人',py:'rén',cat:'people'},{c:'子',py:'zǐ',cat:'people'},{c:'女',py:'nǚ',cat:'people'},
+            {c:'儿',py:'ér',cat:'people'},{c:'父',py:'fù',cat:'people'},{c:'母',py:'mǔ',cat:'people'},
+            {c:'己',py:'jǐ',cat:'people'},{c:'自',py:'zì',cat:'people'},
+            {c:'我',py:'wǒ',cat:'people'},{c:'你',py:'nǐ',cat:'people'},{c:'他',py:'tā',cat:'people'},{c:'们',py:'men',cat:'people'},
+            {c:'爸',py:'bà',cat:'people'},{c:'妈',py:'mā',cat:'people'},{c:'哥',py:'gē',cat:'people'},
+            {c:'姐',py:'jiě',cat:'people'},{c:'爷',py:'yé',cat:'people'},
+            {c:'男',py:'nán',cat:'people'},{c:'老',py:'lǎo',cat:'people'},
+            {c:'王',py:'wáng',cat:'people'},{c:'姓',py:'xìng',cat:'people'},{c:'李',py:'lǐ',cat:'people'},{c:'您',py:'nín',cat:'people'},
+            // ==== 动作方向 (actions) ====
+            {c:'走',py:'zǒu',cat:'actions'},{c:'跑',py:'pǎo',cat:'actions'},{c:'飞',py:'fēi',cat:'actions'},
+            {c:'打',py:'dǎ',cat:'actions'},{c:'拍',py:'pāi',cat:'actions'},{c:'吃',py:'chī',cat:'actions'},
+            {c:'叫',py:'jiào',cat:'actions'},{c:'说',py:'shuō',cat:'actions'},
+            {c:'看',py:'kàn',cat:'actions'},{c:'见',py:'jiàn',cat:'actions'},{c:'听',py:'tīng',cat:'actions'},
+            {c:'问',py:'wèn',cat:'actions'},{c:'讲',py:'jiǎng',cat:'actions'},
+            {c:'开',py:'kāi',cat:'actions'},{c:'坐',py:'zuò',cat:'actions'},{c:'立',py:'lì',cat:'actions'},
+            {c:'爬',py:'pá',cat:'actions'},{c:'捉',py:'zhuō',cat:'actions'},{c:'洗',py:'xǐ',cat:'actions'},
+            {c:'找',py:'zhǎo',cat:'actions'},{c:'放',py:'fàng',cat:'actions'},
+            {c:'入',py:'rù',cat:'actions'},{c:'出',py:'chū',cat:'actions'},{c:'进',py:'jìn',cat:'actions'},
+            {c:'过',py:'guò',cat:'actions'},{c:'回',py:'huí',cat:'actions'},
+            {c:'来',py:'lái',cat:'actions'},{c:'去',py:'qù',cat:'actions'},{c:'到',py:'dào',cat:'actions'},
+            {c:'动',py:'dòng',cat:'actions'},{c:'住',py:'zhù',cat:'actions'},{c:'行',py:'xíng',cat:'actions'},
+            {c:'加',py:'jiā',cat:'actions'},{c:'办',py:'bàn',cat:'actions'},{c:'玩',py:'wán',cat:'actions'},
+            {c:'当',py:'dāng',cat:'actions'},{c:'呼',py:'hū',cat:'actions'},{c:'招',py:'zhāo',cat:'actions'},
+            // ==== 学习生活 (school) ====
+            {c:'学',py:'xué',cat:'school'},{c:'校',py:'xiào',cat:'school'},{c:'书',py:'shū',cat:'school'},
+            {c:'本',py:'běn',cat:'school'},{c:'字',py:'zì',cat:'school'},{c:'课',py:'kè',cat:'school'},
+            {c:'习',py:'xí',cat:'school'},{c:'同',py:'tóng',cat:'school'},{c:'师',py:'shī',cat:'school'},
+            {c:'班',py:'bān',cat:'school'},{c:'笔',py:'bǐ',cat:'school'},{c:'包',py:'bāo',cat:'school'},
+            {c:'尺',py:'chǐ',cat:'school'},{c:'刀',py:'dāo',cat:'school'},{c:'文',py:'wén',cat:'school'},
+            {c:'语',py:'yǔ',cat:'school'},{c:'音',py:'yīn',cat:'school'},
+            {c:'家',py:'jiā',cat:'school'},{c:'房',py:'fáng',cat:'school'},{c:'门',py:'mén',cat:'school'},
+            {c:'床',py:'chuáng',cat:'school'},{c:'衣',py:'yī',cat:'school'},
+            {c:'台',py:'tái',cat:'school'},{c:'机',py:'jī',cat:'school'},{c:'网',py:'wǎng',cat:'school'},
+            {c:'厂',py:'chǎng',cat:'school'},{c:'工',py:'gōng',cat:'school'},
+            {c:'国',py:'guó',cat:'school'},{c:'京',py:'jīng',cat:'school'},{c:'北',py:'běi',cat:'school'},
+            {c:'广',py:'guǎng',cat:'school'},{c:'乡',py:'xiāng',cat:'school'},{c:'故',py:'gù',cat:'school'},
+            {c:'江',py:'jiāng',cat:'school'},{c:'河',py:'hé',cat:'school'},{c:'池',py:'chí',cat:'school'},
+            {c:'医',py:'yī',cat:'school'},{c:'病',py:'bìng',cat:'school'},
+            // ==== 常用汉字 (common1) ====
+            {c:'大',py:'dà',cat:'common'},{c:'小',py:'xiǎo',cat:'common'},
+            {c:'多',py:'duō',cat:'common'},{c:'少',py:'shǎo',cat:'common'},
+            {c:'长',py:'zhǎng',cat:'common'},{c:'高',py:'gāo',cat:'common'},
+            {c:'美',py:'měi',cat:'common'},{c:'好',py:'hǎo',cat:'common'},
+            {c:'快',py:'kuài',cat:'common'},{c:'乐',py:'lè',cat:'common'},
+            {c:'兴',py:'xìng',cat:'common'},{c:'真',py:'zhēn',cat:'common'},
+            {c:'对',py:'duì',cat:'common'},{c:'全',py:'quán',cat:'common'},
+            {c:'方',py:'fāng',cat:'common'},{c:'白',py:'bái',cat:'common'},
+            {c:'红',py:'hóng',cat:'common'},{c:'古',py:'gǔ',cat:'common'},
+            {c:'凉',py:'liáng',cat:'common'},{c:'细',py:'xì',cat:'common'},
+            {c:'无',py:'wú',cat:'common'},{c:'玉',py:'yù',cat:'common'},
+            {c:'义',py:'yì',cat:'common'},{c:'主',py:'zhǔ',cat:'common'},
+            {c:'奇',py:'qí',cat:'common'},{c:'相',py:'xiāng',cat:'common'},
+            // ==== 常用汉字 (common2) 方位/虚词/其他 ====
+            {c:'上',py:'shàng',cat:'common'},{c:'下',py:'xià',cat:'common'},{c:'中',py:'zhōng',cat:'common'},
+            {c:'左',py:'zuǒ',cat:'common'},{c:'右',py:'yòu',cat:'common'},
+            {c:'前',py:'qián',cat:'common'},{c:'后',py:'hòu',cat:'common'},
+            {c:'里',py:'lǐ',cat:'common'},{c:'外',py:'wài',cat:'common'},
+            {c:'东',py:'dōng',cat:'common'},{c:'西',py:'xī',cat:'common'},
+            {c:'边',py:'biān',cat:'common'},{c:'间',py:'jiān',cat:'common'},
+            {c:'近',py:'jìn',cat:'common'},{c:'远',py:'yuǎn',cat:'common'},
+            {c:'早',py:'zǎo',cat:'common'},{c:'晚',py:'wǎn',cat:'common'},
+            {c:'午',py:'wǔ',cat:'common'},{c:'时',py:'shí',cat:'common'},
+            {c:'节',py:'jié',cat:'common'},{c:'今',py:'jīn',cat:'common'},
+            {c:'明',py:'míng',cat:'common'},{c:'再',py:'zài',cat:'common'},
+            {c:'已',py:'yǐ',cat:'common'},{c:'经',py:'jīng',cat:'common'},
+            {c:'也',py:'yě',cat:'common'},{c:'和',py:'hé',cat:'common'},
+            {c:'的',py:'de',cat:'common'},{c:'又',py:'yòu',cat:'common'},
+            {c:'都',py:'dōu',cat:'common'},{c:'很',py:'hěn',cat:'common'},
+            {c:'会',py:'huì',cat:'common'},{c:'可',py:'kě',cat:'common'},
+            {c:'以',py:'yǐ',cat:'common'},{c:'为',py:'wèi',cat:'common'},
+            {c:'因',py:'yīn',cat:'common'},{c:'没',py:'méi',cat:'common'},
+            {c:'不',py:'bù',cat:'common'},{c:'在',py:'zài',cat:'common'},
+            {c:'着',py:'zhe',cat:'common'},{c:'了',py:'le',cat:'common'},
+            {c:'吗',py:'ma',cat:'common'},{c:'呢',py:'ne',cat:'common'},
+            {c:'吧',py:'ba',cat:'common'},{c:'呀',py:'yā',cat:'common'},
+            {c:'么',py:'me',cat:'common'},{c:'什',py:'shén',cat:'common'},
+            {c:'这',py:'zhè',cat:'common'},{c:'那',py:'nà',cat:'common'},
+            {c:'各',py:'gè',cat:'common'},{c:'样',py:'yàng',cat:'common'},
+            {c:'种',py:'zhǒng',cat:'common'},{c:'还',py:'hái',cat:'common'},
+            {c:'要',py:'yào',cat:'common'},{c:'点',py:'diǎn',cat:'common'},
+            {c:'常',py:'cháng',cat:'common'},{c:'非',py:'fēi',cat:'common'},
+            {c:'别',py:'bié',cat:'common'},{c:'干',py:'gàn',cat:'common'},
+            {c:'之',py:'zhī',cat:'common'},
+            {c:'亮',py:'liàng',cat:'common'},{c:'直',py:'zhí',cat:'common'},
+            {c:'爱',py:'ài',cat:'common'},{c:'尖',py:'jiān',cat:'common'},{c:'角',py:'jiǎo',cat:'common'},
+            {c:'吓',py:'xià',cat:'common'},{c:'怕',py:'pà',cat:'common'},
+            {c:'跟',py:'gēn',cat:'common'},{c:'条',py:'tiáo',cat:'common'},
+            {c:'成',py:'chéng',cat:'common'},{c:'就',py:'jiù',cat:'common'},
+            {c:'低',py:'dī',cat:'common'},{c:'思',py:'sī',cat:'common'},
+            {c:'块',py:'kuài',cat:'common'},{c:'往',py:'wǎng',cat:'common'},
+            {c:'连',py:'lián',cat:'common'},{c:'许',py:'xǔ',cat:'common'},
+            {c:'让',py:'ràng',cat:'common'},{c:'给',py:'gěi',cat:'common'},
+            {c:'居',py:'jū',cat:'common'},{c:'单',py:'dān',cat:'common'},
+            {c:'请',py:'qǐng',cat:'common'},{c:'情',py:'qíng',cat:'common'},
+            {c:'晴',py:'qíng',cat:'common'},{c:'清',py:'qīng',cat:'common'},
+            {c:'生',py:'shēng',cat:'common'},{c:'造',py:'zào',cat:'common'},
+            {c:'运',py:'yùn',cat:'common'},{c:'欢',py:'huān',cat:'common'},
+            {c:'夕',py:'xī',cat:'common'},{c:'香',py:'xiāng',cat:'common'},
+            {c:'声',py:'shēng',cat:'common'},{c:'是',py:'shì',cat:'common'},
+            {c:'正',py:'zhèng',cat:'common'},{c:'比',py:'bǐ',cat:'common'},
+            {c:'巴',py:'bā',cat:'common'},{c:'把',py:'bǎ',cat:'common'},
+            {c:'从',py:'cóng',cat:'common'},{c:'才',py:'cái',cat:'common'},
+            {c:'笑',py:'xiào',cat:'common'},{c:'分',py:'fēn',cat:'common'}
           ];
 
           var currentWord = null;
@@ -247,11 +370,14 @@ jobs:
 
           // ---- Build character picker ----
           var cats = {
-            basic: document.getElementById('gridBasic'),
-            common: document.getElementById('gridCommon'),
+            numbers: document.getElementById('gridNumbers'),
             nature: document.getElementById('gridNature'),
             body: document.getElementById('gridBody'),
-            animal: document.getElementById('gridAnimal')
+            animal: document.getElementById('gridAnimal'),
+            people: document.getElementById('gridPeople'),
+            actions: document.getElementById('gridActions'),
+            school: document.getElementById('gridSchool'),
+            common: document.getElementById('gridCommon')
           };
 
           WORDS.forEach(function(w) {
